@@ -3,6 +3,9 @@ using namespace std;
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <string>
+
+#define c_box 2.99
 
 class cosmo_lcdm
 {
@@ -15,9 +18,20 @@ class cosmo_lcdm
 	cosmo_lcdm(double omega_dm_0_val=0.3,double h_val=0.7,int model=0)
 	{
 		omega_dm_0 = omega_dm_0_val;
-		//H0 = h_val;
+		H0 = (h_val/c_box)*0.001;
 		model = model;
 		ratio = (1.0-omega_dm_0)/(omega_dm_0);
+		printf("H0 %lf\n",H0);
+
+	}
+
+	double Hsqr(double a,double a0=1.0)
+	{
+		double val,omega;
+		omega = omega_dm_0*pow(a0/a,3.0);
+		val = H0*H0*omega*( 1.0 + ratio*pow(a/a0,3.0) );
+		return(val);
+
 
 	}
 
@@ -45,12 +59,29 @@ class cosmo_lcdm
 
 	double delta_aa(double a, double delta, double delta_a)
 	{
-		double HbtbyHb2, diff, acc;
+		double HbtbyHb2, diff, acc,Hsqr_val,ddelta_dtau_sqr_by_adotsqr;
 
 		HbtbyHb2 = Hb_t_by_Hb2(a);
 		diff = H_Diff(a, delta);
+		Hsqr_val = Hsqr(a);
+		//ddelta_dtau_sqr_by_adotsqr = a*a*delta_a*delta_a;
 
 		acc = -(1.0/a)*(3.0 + HbtbyHb2)*delta_a + (4.0/3.0)*delta_a*delta_a/(1.0+delta) - 3.0*(1.0+delta)*diff/(a*a);
+	
+		return(acc);
+
+	}
+
+	double lin_delta_aa(double a, double delta, double delta_a)
+	{
+		double HbtbyHb2, diff, acc,Hsqr_val,ddelta_dtau_sqr_by_adotsqr;
+
+		HbtbyHb2 = Hb_t_by_Hb2(a);
+		diff = H_Diff(a, delta);
+		Hsqr_val = Hsqr(a);
+		//ddelta_dtau_sqr_by_adotsqr = a*a*delta_a*delta_a;
+
+		acc = -(1.0/a)*(3.0 + HbtbyHb2)*delta_a - 3.0*diff/(a*a);
 	
 		return(acc);
 
@@ -68,13 +99,25 @@ class cosmo_dgp
 	int model;
 
 	public:
-	cosmo_dgp(double omega_dm_0_val=0.3,double h_val=0.7,int model=0)
+	cosmo_dgp(double omega_dm_0_val=0.3,double h_val=0.7,int model=1)
 	{
 		omega_dm_0 = omega_dm_0_val;
-		//H0 = h_val;
+		H0 = (h_val/c_box)*0.001;
 		model = model;
 		omega_r = 0.5*(1.0-omega_dm_0)*0.5*(1.0-omega_dm_0);
+		printf("Omega_r is %lf\n",omega_r);
 		
+
+	}
+
+	double Hsqr(double a,double a0=1.0)
+	{
+		double val,omega;
+		omega = omega_dm_0*pow(a0/a,3.0);
+		beta = sqrt( omega + omega_r);
+		val = H0*H0*( omega + 2.0*sqrt(omega_r)*(sqrt(omega_r)+beta) );
+		return(val);
+
 
 	}
 
@@ -86,7 +129,7 @@ class cosmo_dgp
 		omega = omega_dm_0*pow(a0/a,3.0);
 		beta = sqrt( omega + omega_r);
 		
-		val = -1.5*omega*(1.0+sqrt(omega_r)/beta)/( omega + 2.0*omega_r*(1.0+beta/sqrt(omega_r)) );
+		val = -1.5*omega*(1.0+sqrt(omega_r)/beta)/( omega + 2.0*sqrt(omega_r)*(sqrt(omega_r)+beta) );
 		return(val);
 
 
@@ -99,9 +142,9 @@ class cosmo_dgp
 		omega = omega_dm_0*pow(a0/a,3.0);
 		beta = sqrt( omega + omega_r);
 		b = sqrt(omega_r + omega*(1.0+delta));
-		term1 = omega*(1.5*( sqrt(omega_r)*(1.0/beta -(1.0+delta)/b) ) - delta );
+		term1 = omega*(1.5*( sqrt(omega_r)*(1.0/beta -(1.0+delta)/b) ) - 0.5*delta );
 		term2 = 2.0*sqrt(omega_r)*(b-beta);
-		diff = (term1+term2)/( omega + 2.0*omega_r*(1.0+beta/sqrt(omega_r)) ) ;
+		diff = (term1+term2)/( omega + 2.0*sqrt(omega_r)*(sqrt(omega_r)+beta) );
 		return(diff);
 		
 
@@ -109,10 +152,12 @@ class cosmo_dgp
 
 	double delta_aa(double a, double delta, double delta_a)
 	{
-		double HbtbyHb2, diff, acc;
+		double HbtbyHb2, diff, acc,Hsqr_val,ddelta_dtau_sqr_by_adotsqr;
 
 		HbtbyHb2 = Hb_t_by_Hb2(a);
 		diff = H_Diff(a, delta);
+		Hsqr_val = Hsqr(a);
+		//ddelta_dtau_sqr_by_adotsqr = delta_a*delta_a;
 
 		acc = -(1.0/a)*(3.0 + HbtbyHb2)*delta_a + (4.0/3.0)*delta_a*delta_a/(1.0+delta) - 3.0*(1.0+delta)*diff/(a*a);
 	
@@ -135,14 +180,20 @@ int main(int argc,char *argv[])
 	double delta,delta_a,delta_rk[5], delta_a_rk[5], acc;
 	double delta_i, delta_a_i;
 
-	double a,ai,a0,ak,da;
+	double a,ai,ai_burn,a0,ak,da;
 	double rk_coef[4] = {0.5,0.5,1.0,1.0};
 
 	int i,theory;
 
-	FILE *fp = fopen("delta.txt","w");
-	cosmo_lcdm cosmo_model_lcdm(0.3);
-	cosmo_dgp cosmo_model_dgp(0.3);
+	string fname = "delta_";
+	string argstr = argv[1];
+	string extstr = ".txt";
+	fname = fname+argstr+extstr;
+	printf("%s\n",fname.c_str());
+
+	FILE *fp = fopen(fname.c_str(),"w");
+	cosmo_lcdm cosmo_model_lcdm(1.0);
+	cosmo_dgp cosmo_model_dgp(0.17);
 	
 	if(!strcmp(argv[1],"lcdm"))
 	{
@@ -154,28 +205,41 @@ int main(int argc,char *argv[])
 		theory = 1;
 	}
 
-	da = 0.0001;
+	da = 0.000001;
 	ai = 0.001;
+	ai_burn = 0.1*ai;
 	a0 = 1.0;
 
-	delta_i = 0.001;
-	delta_a_i = .000;
+	delta_i = 0.00001;
+	delta_a_i = 0.000;
 	
 	delta = delta_i;
-	delta_a_i = delta_a_i;
+	delta_a = delta_a_i;
 
 
 
+	int burn = 1, cntr;
 
+	//fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\n",a/ai,delta,delta_a,delta/delta_i,delta_a/delta_a_i);
 
-	fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\n",a/ai,delta,delta_a,delta/delta_i,delta_a/delta_a_i);
-
-	for(a=ai;a<=a0;a+=da)
+	for(a=ai_burn,cntr=0;a<=a0;a+=da,++cntr)
 	{
 		ak = a;
 		delta_rk[0] = delta;
 		delta_a_rk[0] = delta_a; 
+		
+		if(!(burn)&&((cntr%100)==0))
+		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\n",a/ai,delta,delta_a,delta/delta_i,delta_a/delta_a_i);
 
+		if((a>ai)&&(burn))
+		{
+			burn = 0;
+			delta_i = delta;
+			delta_a_i = delta_a;
+			printf("intial dc is %lf\n",delta_i);
+
+
+		}
 
 		for(i=1;i<=4;++i)
 		{
@@ -184,8 +248,13 @@ int main(int argc,char *argv[])
 			if(theory==1)			
 			acc  = cosmo_model_dgp.delta_aa( ak,  delta_rk[0], delta_a_rk[0]);
 
+			
+
 			delta_a_rk[i] = da*acc;
 			delta_rk[i] = da*delta_a_rk[0];
+
+			if(a==ai)
+			printf("acc %.10lf\n",delta_rk[i]);
 
 			delta_rk[0] = delta + rk_coef[i-1]*delta_rk[i];
 			delta_a_rk[0] = delta_a + rk_coef[i-1]*delta_a_rk[i];
@@ -198,7 +267,7 @@ int main(int argc,char *argv[])
 		delta = delta + (1.0/6.0)*(delta_rk[1]+2.0*delta_rk[2]+2.0*delta_rk[3]+delta_rk[4]);
 		delta_a = delta_a + (1.0/6.0)*(delta_a_rk[1]+2.0*delta_a_rk[2]+2.0*delta_a_rk[3]+delta_a_rk[4]);
 
-		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\n",a/ai,delta,delta_a,delta/delta_i,delta_a/delta_a_i);
+		
 
 
 	}
