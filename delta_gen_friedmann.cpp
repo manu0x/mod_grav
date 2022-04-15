@@ -91,6 +91,87 @@ class cosmo_lcdm
 };
 
 
+class cosmo_bigravity
+{
+
+	private:
+	double omega_dm_0, H0, ratio,b,beta,gamma,B0,B1;
+	int model;
+
+	public:
+	cosmo_bigravity(double omega_dm_0_val=0.3,double h_val=0.7,int model=2)
+	{
+		omega_dm_0 = omega_dm_0_val;
+		H0 = (h_val/c_box)*0.001;
+		model = model;
+		B1 = 0.0;
+		B0 = 3.0*(1.0-omega_dm_0-B1*B1/3.0);
+		ratio = (1.0-omega_dm_0)/(omega_dm_0);
+		printf("H0 %lf\n",H0);
+
+	}
+
+	double Hsqr(double a,double a0=1.0)
+	{
+		double val,omega;
+		omega = omega_dm_0*pow(a0/a,3.0);
+		val = H0*H0*omega*( 1.0 + ratio*pow(a/a0,3.0) );
+		return(val);
+
+
+	}
+
+
+	double Hb_t_by_Hb2(double a,double a0=1.0)
+	{
+
+		double val;
+		
+		val = -1.5/( 1.0 + ratio*pow(a/a0,3.0) );
+		return(val);
+
+
+
+	}
+
+	double H_Diff(double a, double delta, double a0=1.0)
+	{
+		double diff, term1,term2,omega_dm;
+	
+		omega_dm = omega_dm_0*pow(a0/a,3.0);		
+		beta = 0.5*omega_dm + B0/6.0;
+		b = 0.5*omega_dm*(1.0+delta) + B0/6.0;
+		gamma = (b+ sqrt(b*b + B1*B1/3.0))/(beta+ sqrt(beta*beta + B1*B1/3.0));
+		term1 = 1.0/sqrt(b*b + B1*B1/3.0);
+		term2 = (1.0+delta)*gamma/sqrt(b*b + B1*B1/3.0);
+		diff = (gamma-1.0) + (3.0/4.0)*omega_dm*(term1-term2) ;
+		return(diff);
+		
+
+	}
+
+	double delta_aa(double a, double delta, double delta_a)
+	{
+		double HbtbyHb2, diff, acc,Hsqr_val,ddelta_dtau_sqr_by_adotsqr;
+
+		HbtbyHb2 = Hb_t_by_Hb2(a);
+		diff = H_Diff(a, delta);
+		Hsqr_val = Hsqr(a);
+		//ddelta_dtau_sqr_by_adotsqr = a*a*delta_a*delta_a;
+
+		acc = -(1.0/a)*(3.0 + HbtbyHb2)*delta_a + (4.0/3.0)*delta_a*delta_a/(1.0+delta) - 3.0*(1.0+delta)*diff/(a*a);
+	
+		return(acc);
+
+	}
+
+	
+	
+
+};
+
+
+
 class cosmo_dgp
 {
 
