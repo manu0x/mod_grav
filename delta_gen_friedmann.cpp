@@ -72,7 +72,7 @@ class cosmo_lcdm
 
 	}
 
-	double lin_delta_aa(double a, double delta, double delta_a)
+	double lin_delta_aa(double a, double delta, double delta_a,double a0=1.0)
 	{
 		double HbtbyHb2, diff, acc,Hsqr_val,ddelta_dtau_sqr_by_adotsqr;
 
@@ -104,7 +104,7 @@ class cosmo_bigravity
 		omega_dm_0 = omega_dm_0_val;
 		H0 = (h_val/c_box)*0.001;
 		model = model;
-		B1 = 0.0;
+		B1 = 0.00;
 		B0 = 3.0*(1.0-omega_dm_0-B1*B1/3.0);
 		ratio = (1.0-omega_dm_0)/(omega_dm_0);
 		printf("H0 %lf\n",H0);
@@ -115,7 +115,7 @@ class cosmo_bigravity
 	{
 		double val,omega;
 		omega = omega_dm_0*pow(a0/a,3.0);
-		val = H0*H0*omega*( 1.0 + ratio*pow(a/a0,3.0) );
+		val = H0*H0*(   0.5*omega + B0/6.0  + sqrt((0.5*omega + B0/6.0)*(0.5*omega + B0/6.0) + B1*B1/3.0 ) );
 		return(val);
 
 
@@ -125,9 +125,11 @@ class cosmo_bigravity
 	double Hb_t_by_Hb2(double a,double a0=1.0)
 	{
 
-		double val;
+		double val,omega_dm;
+		omega_dm = omega_dm_0*pow(a0/a,3.0);		
+		beta = 0.5*omega_dm + B0/6.0;
 		
-		val = -1.5/( 1.0 + ratio*pow(a/a0,3.0) );
+		val = -(3.0/4.0)*omega_dm/sqrt(beta*beta + B1*B1/3.0);
 		return(val);
 
 
@@ -142,7 +144,7 @@ class cosmo_bigravity
 		beta = 0.5*omega_dm + B0/6.0;
 		b = 0.5*omega_dm*(1.0+delta) + B0/6.0;
 		gamma = (b+ sqrt(b*b + B1*B1/3.0))/(beta+ sqrt(beta*beta + B1*B1/3.0));
-		term1 = 1.0/sqrt(b*b + B1*B1/3.0);
+		term1 = 1.0/sqrt(beta*beta + B1*B1/3.0);
 		term2 = (1.0+delta)*gamma/sqrt(b*b + B1*B1/3.0);
 		diff = (gamma-1.0) + (3.0/4.0)*omega_dm*(term1-term2) ;
 		return(diff);
@@ -152,14 +154,37 @@ class cosmo_bigravity
 
 	double delta_aa(double a, double delta, double delta_a)
 	{
-		double HbtbyHb2, diff, acc,Hsqr_val,ddelta_dtau_sqr_by_adotsqr;
+		double HbtbyHb2, diff, acc;
 
 		HbtbyHb2 = Hb_t_by_Hb2(a);
 		diff = H_Diff(a, delta);
-		Hsqr_val = Hsqr(a);
-		//ddelta_dtau_sqr_by_adotsqr = a*a*delta_a*delta_a;
+		
 
 		acc = -(1.0/a)*(3.0 + HbtbyHb2)*delta_a + (4.0/3.0)*delta_a*delta_a/(1.0+delta) - 3.0*(1.0+delta)*diff/(a*a);
+	
+		return(acc);
+
+	}
+
+
+	double lin_delta_aa(double a, double delta, double delta_a,double a0=1.0)
+	{
+		double HbtbyHb2, diff, acc, theta,kappa,lambda;
+
+		HbtbyHb2 = Hb_t_by_Hb2(a);
+		diff = H_Diff(a, delta);
+		
+		theta = pow(a0/a,3.0);
+		kappa = -3.0*( 9.0*omega_dm_0*theta + 6.0*B1*B1*omega_dm_0*theta + pow(B1,4.0)*theta*omega_dm_0 
+				-18.0*theta*omega_dm_0*omega_dm_0 + 6.0*B1*B1*theta*omega_dm_0*omega_dm_0 - 9.0*theta*theta*omega_dm_0*omega_dm_0 
+				+ 3.0*B1*B1*theta*theta*omega_dm_0*omega_dm_0 + 9.0*theta*omega_dm_0*omega_dm_0*omega_dm_0
+				+ 9.0*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0 - 18.0*omega_dm_0*omega_dm_0*omega_dm_0*theta*theta*theta
+				+ 54.0*theta*theta*omega_dm_0*omega_dm_0*sqrt(B1*B1/3.0 + (B0/6.0 + 0.5*omega_dm_0*theta)*(B0/6.0 + 0.5*omega_dm_0*theta)))*delta;
+		lambda = (9.0 + 6.0*B1*B1 + B1*B1*B1*B1 -18.0*omega_dm_0 + 6.0*B1*B1*omega_dm_0 + 18.0*theta*omega_dm_0);
+		lambda = 2.0*pow(lambda,1.5);
+		
+		diff = kappa*delta/lambda;
+		acc = -(1.0/a)*(3.0 + HbtbyHb2)*delta_a  - 3.0*diff/(a*a);
 	
 		return(acc);
 
@@ -247,6 +272,23 @@ class cosmo_dgp
 	}
 
 
+	double lin_delta_aa(double a, double delta, double delta_a,double a0=1.0)
+	{
+		double HbtbyHb2, diff, acc,theta,numer,denom;
+
+		HbtbyHb2 = Hb_t_by_Hb2(a);
+		theta = pow(a0/a,3.0);
+		numer = -theta*omega_dm_0*( 2.0*pow(omega_r,1.5) - sqrt(omega_r)*theta*omega_dm_0 + 2.0*omega_r*sqrt(omega_r + theta*omega_dm_0) 
+						+ 2.0*theta*omega_dm_0*sqrt(omega_r + theta*omega_dm_0) );
+		denom = 4.0*pow(omega_r+theta*omega_dm_0,1.5)*(2.0*omega_r + theta*omega_dm_0 + 2.0*sqrt(omega_r)*sqrt(omega_r+theta*omega_dm_0));
+		diff = numer*delta/denom;
+		acc = -(1.0/a)*(3.0 + HbtbyHb2)*delta_a - 3.0*diff/(a*a);
+	
+		return(acc);
+
+	}
+
+
 };
 
 
@@ -274,7 +316,8 @@ int main(int argc,char *argv[])
 
 	FILE *fp = fopen(fname.c_str(),"w");
 	cosmo_lcdm cosmo_model_lcdm(1.0);
-	cosmo_dgp cosmo_model_dgp(0.17);
+	cosmo_dgp cosmo_model_dgp(0.3);
+	cosmo_bigravity cosmo_model_bigravity(0.3);
 	
 	if(!strcmp(argv[1],"lcdm"))
 	{
@@ -282,16 +325,22 @@ int main(int argc,char *argv[])
 		theory = 0;
 	}
 	else
+	if(!strcmp(argv[1],"dgp"))
 	{	printf("dgp\n");
 		theory = 1;
 	}
+	else
+	if(!strcmp(argv[1],"bimetric"))
+	{	printf("bimetric\n");
+		theory = 2;
+	}
 
-	da = 0.000001;
+	da = 0.0000001;
 	ai = 0.001;
 	ai_burn = 0.1*ai;
 	a0 = 1.0;
 
-	delta_i = 0.00001;
+	delta_i = ai;
 	delta_a_i = 0.000;
 	
 	delta = delta_i;
@@ -310,7 +359,7 @@ int main(int argc,char *argv[])
 		delta_a_rk[0] = delta_a; 
 		
 		if(!(burn)&&((cntr%100)==0))
-		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\n",a/ai,delta,delta_a,delta/delta_i,delta_a/delta_a_i);
+		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\n",a/ai,delta,delta*ai/(a*delta_i),delta/delta_i,delta_a/delta_a_i);
 
 		if((a>ai)&&(burn))
 		{
@@ -327,7 +376,9 @@ int main(int argc,char *argv[])
 			if(theory==0)			
 			acc  = cosmo_model_lcdm.delta_aa( ak,  delta_rk[0], delta_a_rk[0]);
 			if(theory==1)			
-			acc  = cosmo_model_dgp.delta_aa( ak,  delta_rk[0], delta_a_rk[0]);
+			acc  = cosmo_model_dgp.lin_delta_aa( ak,  delta_rk[0], delta_a_rk[0]);
+			if(theory==2)			
+			acc  = cosmo_model_bigravity.delta_aa( ak,  delta_rk[0], delta_a_rk[0]);
 
 			
 
