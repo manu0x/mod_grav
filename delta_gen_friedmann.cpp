@@ -52,6 +52,7 @@ class cosmo_lcdm
 	{
 		double diff;
 		diff = -0.5*delta/( 1.0 + ratio*pow(a/a0,3.0) ) ;
+		//printf("lcdm diff %lf\n",diff);
 		return(diff);
 		
 
@@ -147,6 +148,8 @@ class cosmo_bigravity
 		term1 = 1.0/sqrt(beta*beta + B1*B1/3.0);
 		term2 = (1.0+delta)*gamma/sqrt(b*b + B1*B1/3.0);
 		diff = (gamma-1.0) + (3.0/4.0)*omega_dm*(term1-term2) ;
+
+		//printf("diff %lf  bigr  %lf\n",diff,1.0+delta/(1.0+ratio*pow(a/a0,3.0)));
 		return(diff);
 		
 
@@ -159,8 +162,9 @@ class cosmo_bigravity
 		HbtbyHb2 = Hb_t_by_Hb2(a);
 		diff = H_Diff(a, delta);
 		
-
+		
 		acc = -(1.0/a)*(3.0 + HbtbyHb2)*delta_a + (4.0/3.0)*delta_a*delta_a/(1.0+delta) - 3.0*(1.0+delta)*diff/(a*a);
+		
 	
 		return(acc);
 
@@ -179,8 +183,10 @@ class cosmo_bigravity
 				-18.0*theta*omega_dm_0*omega_dm_0 + 6.0*B1*B1*theta*omega_dm_0*omega_dm_0 - 9.0*theta*theta*omega_dm_0*omega_dm_0 
 				+ 3.0*B1*B1*theta*theta*omega_dm_0*omega_dm_0 + 9.0*theta*omega_dm_0*omega_dm_0*omega_dm_0
 				+ 9.0*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0 - 18.0*omega_dm_0*omega_dm_0*omega_dm_0*theta*theta*theta
-				+ 54.0*theta*theta*omega_dm_0*omega_dm_0*sqrt(B1*B1/3.0 + (B0/6.0 + 0.5*omega_dm_0*theta)*(B0/6.0 + 0.5*omega_dm_0*theta)))*delta;
-		lambda = (9.0 + 6.0*B1*B1 + B1*B1*B1*B1 -18.0*omega_dm_0 + 6.0*B1*B1*omega_dm_0 + 18.0*theta*omega_dm_0);
+				+ 54.0*theta*theta*omega_dm_0*omega_dm_0*sqrt(B1*B1/3.0 + (B0/6.0 + 0.5*omega_dm_0*theta)*(B0/6.0 + 0.5*omega_dm_0*theta)));
+		lambda = (9.0 + 6.0*B1*B1 + B1*B1*B1*B1 -18.0*omega_dm_0 + 6.0*B1*B1*omega_dm_0 + 18.0*theta*omega_dm_0 
+				-6.0*B1*B1*theta*omega_dm_0 + 9.0*omega_dm_0*omega_dm_0 - 18.0*theta*omega_dm_0*omega_dm_0
+				+ 9.0*theta*theta*omega_dm_0*omega_dm_0);
 		lambda = 2.0*pow(lambda,1.5);
 		
 		diff = kappa*delta/lambda;
@@ -315,7 +321,7 @@ int main(int argc,char *argv[])
 	printf("%s\n",fname.c_str());
 
 	FILE *fp = fopen(fname.c_str(),"w");
-	cosmo_lcdm cosmo_model_lcdm(1.0);
+	cosmo_lcdm cosmo_model_lcdm(0.3);
 	cosmo_dgp cosmo_model_dgp(0.3);
 	cosmo_bigravity cosmo_model_bigravity(0.3);
 	
@@ -374,11 +380,11 @@ int main(int argc,char *argv[])
 		for(i=1;i<=4;++i)
 		{
 			if(theory==0)			
-			acc  = cosmo_model_lcdm.delta_aa( ak,  delta_rk[0], delta_a_rk[0]);
+			acc  = cosmo_model_lcdm.lin_delta_aa( ak,  delta_rk[0], delta_a_rk[0]);
 			if(theory==1)			
 			acc  = cosmo_model_dgp.lin_delta_aa( ak,  delta_rk[0], delta_a_rk[0]);
 			if(theory==2)			
-			acc  = cosmo_model_bigravity.delta_aa( ak,  delta_rk[0], delta_a_rk[0]);
+			acc  = cosmo_model_bigravity.lin_delta_aa( ak,  delta_rk[0], delta_a_rk[0]);
 
 			
 
