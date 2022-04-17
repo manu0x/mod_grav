@@ -73,21 +73,22 @@ class cosmo_lcdm
 
 	}
 
-	double lin_delta_aa(double a, double delta, double delta_a,double a0=1.0)
+	void pert_delta_aa(double *acc, double D[2], double D_a[2],double a,double a0=1.0)
 	{
-		double HbtbyHb2, diff, acc,Hsqr_val,ddelta_dtau_sqr_by_adotsqr;
+		double HbtbyHb2;	
+		double c1,c2;
 
 		HbtbyHb2 = Hb_t_by_Hb2(a);
-		diff = H_Diff(a, delta);
-		Hsqr_val = Hsqr(a);
-		//ddelta_dtau_sqr_by_adotsqr = a*a*delta_a*delta_a;
+		
+		
+		c1 = -0.5/( 1.0 + ratio*pow(a/a0,3.0) );
 
-		acc = -(1.0/a)*(3.0 + HbtbyHb2)*delta_a - 3.0*diff/(a*a);
-	
-		return(acc);
+		acc[0] = -(3.0 + HbtbyHb2)*D_a[0]/a - 3.0*c1*D[0]/(a*a);
+		acc[1] = -(3.0 + HbtbyHb2)*D_a[1]/a + (8.0/3.0)*D_a[0]*D_a[0] - 3.0*c1*D[1]/(a*a) - 6.0*(c1+c2)*D[0]*D[0]/(a*a);
+
+
 
 	}
-
 
 };
 
@@ -197,6 +198,48 @@ class cosmo_bigravity
 	}
 
 
+	void pert_delta_aa(double *acc, double D[2], double D_a[2],double a,double a0=1.0)
+	{
+		double HbtbyHb2, diff, theta,kappa1,lambda1,kappa2,lambda2;	
+		double c1,c2;
+
+		HbtbyHb2 = Hb_t_by_Hb2(a);
+		
+		
+		theta = pow(a0/a,3.0);
+		kappa1 = -3.0*( 9.0*omega_dm_0*theta + 6.0*B1*B1*omega_dm_0*theta + pow(B1,4.0)*theta*omega_dm_0 
+				-18.0*theta*omega_dm_0*omega_dm_0 + 6.0*B1*B1*theta*omega_dm_0*omega_dm_0 - 9.0*theta*theta*omega_dm_0*omega_dm_0 
+				+ 3.0*B1*B1*theta*theta*omega_dm_0*omega_dm_0 + 9.0*theta*omega_dm_0*omega_dm_0*omega_dm_0
+				+ 9.0*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0 - 18.0*omega_dm_0*omega_dm_0*omega_dm_0*theta*theta*theta
+				+ 54.0*theta*theta*omega_dm_0*omega_dm_0*sqrt(B1*B1/3.0 + (B0/6.0 + 0.5*omega_dm_0*theta)*(B0/6.0 + 0.5*omega_dm_0*theta)));
+		lambda1 = (9.0 + 6.0*B1*B1 + B1*B1*B1*B1 -18.0*omega_dm_0 + 6.0*B1*B1*omega_dm_0 + 18.0*theta*omega_dm_0 
+				-6.0*B1*B1*theta*omega_dm_0 + 9.0*omega_dm_0*omega_dm_0 - 18.0*theta*omega_dm_0*omega_dm_0
+				+ 9.0*theta*theta*omega_dm_0*omega_dm_0);
+		lambda1 = 2.0*pow(lambda1,1.5);
+		
+		c1 = kappa1/lambda1;
+
+		kappa2 = 27.0*( -36.0*B1*B1*theta*theta*omega_dm_0*omega_dm_0 -24.0*B1*B1*B1*B1*theta*theta*omega_dm_0*omega_dm_0 
+				-4.0*pow(B1,6.0)*theta*theta*omega_dm_0*omega_dm_0 + 72.0*B1*B1*theta*theta*omega_dm_0*omega_dm_0
+				-24.0*pow(B1,4.0)*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0 - 3.0*pow(B1,4.0)*theta*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0
+				-36.0*B1*B1*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0*omega_dm_0 - 9.0*B1*B1*theta*theta*theta*pow(omega_dm_0,4.0)
+				+ 45.0*B1*B1*pow(theta,4.0)*pow(omega_dm_0,4.0));
+		lambda2 = 9.0+6.0*B1*B1+pow(B1,4.0) - 18.0*omega_dm_0 + 6.0*B1*B1*omega_dm_0 
+				+ 18.0*theta*omega_dm_0 - 6.0*B1*B1*theta*omega_dm_0 + 9.0*omega_dm_0*omega_dm_0
+				- 18.0*theta*omega_dm_0*omega_dm_0 + 9.0*theta*theta*omega_dm_0*omega_dm_0;
+		lambda2 = pow(lambda2,2.5);
+		lambda2 = lambda2*(3.0 - B1*B1 - 3.0*theta + 3.0*omega_dm_0*theta + 6.0*sqrt*(B1*B1/3.0 + (B0/6.0 + 0.5*omega_dm_0*theta)*(B0/6.0 + 0.5*omega_dm_0*theta) ));
+	
+		c2 = kappa2/lambda2;
+
+		acc[0] = -(3.0 + HbtbyHb2)*D_a[0]/a - 3.0*c1*D[0]/(a*a);
+		acc[1] = -(3.0 + HbtbyHb2)*D_a[1]/a + (8.0/3.0)*D_a[0]*D_a[0] - 3.0*c1*D[1]/(a*a) - 6.0*(c1+c2)*D[0]*D[0]/(a*a);
+
+
+
+	}
+
+
 
 	
 	
@@ -293,6 +336,41 @@ class cosmo_dgp
 		acc = -(1.0/a)*(3.0 + HbtbyHb2)*delta_a - 3.0*diff/(a*a);
 	
 		return(acc);
+
+	}
+
+
+	void pert_delta_aa(double *acc, double D[2], double D_a[2],double a,double a0=1.0)
+	{
+		double HbtbyHb2, diff, theta,kappa1,lambda1,kappa2,lambda2,omega_dm;	
+		double c1,c2;
+
+		HbtbyHb2 = Hb_t_by_Hb2(a);
+		
+		
+		theta = pow(a0/a,3.0);
+		omega_dm = omega_dm_0*theta;
+		
+		kappa1 = -( 2.0*(omega_dm_0 + omega_r/theta)*(omega_dm_0 + 4.0*omega_r/theta) +
+					sqrt(omega_r)*sqrt( omega_r + omega )*(5.0*omega_dm_0 + 8.0*omega_r/theta)/theta );
+		
+		lambda1 = 4.0*(omega_dm_0 + omega_r/theta)*(omega_dm_0 + omega_r/theta);
+		
+		
+		c1 = kappa1/lambda1;
+
+		kappa2 = omega_dm_0*omega_dm_0*sqrt(omega_r)*sqrt(omega_r + omega)*(8.0*omega_r/theta - omega_dm_0);
+
+	
+		lambda2 = 16.0*(sqrt(omega_r) + sqrt( omega_r + omega_dm ))*(sqrt(omega_r) + sqrt( omega_r + omega_dm ))*
+						(omega_dm_0 + omega_r/theta)*(omega_dm_0 + omega_r/theta)*(omega_dm_0 + omega_r/theta);
+
+		c2 = kappa2/lambda2;
+
+		acc[0] = -(3.0 + HbtbyHb2)*D_a[0]/a - 3.0*c1*D[0]/(a*a);
+		acc[1] = -(3.0 + HbtbyHb2)*D_a[1]/a + (8.0/3.0)*D_a[0]*D_a[0] - 3.0*c1*D[1]/(a*a) - 6.0*(c1+c2)*D[0]*D[0]/(a*a);
+
+
 
 	}
 
