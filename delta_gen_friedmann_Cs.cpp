@@ -82,6 +82,7 @@ class cosmo_lcdm
 		
 		
 		c1 = -0.5/( 1.0 + ratio*pow(a/a0,3.0) );
+		c2 = 0.0;
 
 		acc[0] = -(3.0 + HbtbyHb2)*D_a[0]/a - 3.0*c1*D[0]/(a*a);
 		acc[1] = -(3.0 + HbtbyHb2)*D_a[1]/a + (8.0/3.0)*D_a[0]*D_a[0] - 3.0*c1*D[1]/(a*a) - 6.0*(c1+c2)*D[0]*D[0]/(a*a);
@@ -396,7 +397,7 @@ int main(int argc,char *argv[])
 
 	string fname = "delta_";
 	string argstr = argv[1];
-	string extstr = ".txt";
+	string extstr = "2.txt";
 	fname = fname+argstr+extstr;
 	printf("%s\n",fname.c_str());
 
@@ -432,7 +433,7 @@ int main(int argc,char *argv[])
 	D[0] = D_i[0];
 	D_a[0] = D_a_i[0];
 
-	D_i[1] = ai;
+	D_i[1] = 4.86*D_i[0]*D_i[0]/3.0;
 	D_a_i[1] = 0.000;
 	
 	D[1] = D_i[1];
@@ -447,14 +448,7 @@ int main(int argc,char *argv[])
 	for(a=ai_burn,cntr=0;a<=a0;a+=da,++cntr)
 	{
 		ak = a;
-		D_rk[0][0] = D[0];
-		D_a_rk[0][0] = D_a[0]; 
 
-		D_rk[1][0] = D[1];
-		D_a_rk[1][0] = D_a[1]; 
-		
-		if(!(burn)&&((cntr%100)==0))
-		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",a/ai,D[0],D[1],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[1]/(D[0]*D[0]));
 
 		if((a>ai)&&(burn))
 		{
@@ -462,6 +456,9 @@ int main(int argc,char *argv[])
 
 			D_i[0] = D[0];
 			D_a_i[0] = D_a[0];
+
+			D[1] = 4.86*D[0]*D[0]/3.0;
+			D_a[1] = D_a[0];//1.0;
 		
 			D_i[1] = D[1];
 			D_a_i[1] = D_a[1];
@@ -470,6 +467,19 @@ int main(int argc,char *argv[])
 
 
 		}
+
+
+
+		D_rk[0][0] = D[0];
+		D_a_rk[0][0] = D_a[0]; 
+
+		D_rk[1][0] = D[1];
+		D_a_rk[1][0] = D_a[1]; 
+		
+		if(!(burn)&&((cntr%100)==0))
+		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",a/ai,D[0],D[1],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],3.0*D[1]/(D[0]*D[0]));
+
+		
 
 		for(i=1;i<=4;++i)
 		{
@@ -486,6 +496,7 @@ int main(int argc,char *argv[])
 		   for(j=0;j<2;++j)
 			{D_a_rk[j][i] = da*acc[j];
 			 D_rk[j][i] = da*D_a_rk[j][0];
+				
 
 			 
 
