@@ -345,11 +345,12 @@ int main(int argc,char *argv[])
 
 	da = 0.0000001;
 	ai = 0.001;
-	ai_burn = 0.1*ai;
+	ai_burn = ai;
 	a0 = 1.0;
 
-	delta_i = ai;
-	delta_a_i = 0.000;
+	
+	delta_a_i = 0.01;
+	delta_i = delta_a_i*ai;
 	
 	delta = delta_i;
 	delta_a = delta_a_i;

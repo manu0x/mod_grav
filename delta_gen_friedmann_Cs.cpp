@@ -107,7 +107,7 @@ class cosmo_bigravity
 		omega_dm_0 = omega_dm_0_val;
 		H0 = (h_val/c_box)*0.001;
 		model = model;
-		B1 = 0.00;
+		B1 = 6.0;
 		B0 = 3.0*(1.0-omega_dm_0-B1*B1/3.0);
 		ratio = (1.0-omega_dm_0)/(omega_dm_0);
 		printf("H0 %lf\n",H0);
@@ -397,12 +397,12 @@ int main(int argc,char *argv[])
 
 	string fname = "delta_";
 	string argstr = argv[1];
-	string extstr = "2.txt";
+	string extstr = "_1.txt";
 	fname = fname+argstr+extstr;
 	printf("%s\n",fname.c_str());
 
 	FILE *fp = fopen(fname.c_str(),"w");
-	cosmo_lcdm cosmo_model_lcdm(0.3);
+	cosmo_lcdm cosmo_model_lcdm(1.0);
 	cosmo_dgp cosmo_model_dgp(0.3);
 	cosmo_bigravity cosmo_model_bigravity(0.3);
 	
@@ -424,17 +424,18 @@ int main(int argc,char *argv[])
 
 	da = 0.0000001;
 	ai = 0.001;
-	ai_burn = 0.1*ai;
+	ai_burn = ai*0.01;
 	a0 = 1.0;
 
-	D_i[0] = ai;
-	D_a_i[0] = 0.000;
+
+	D_a_i[0] = 0.01;
+	D_i[0] = ai_burn*D_a_i[0];
 	
 	D[0] = D_i[0];
 	D_a[0] = D_a_i[0];
 
-	D_i[1] = 4.86*D_i[0]*D_i[0]/3.0;
-	D_a_i[1] = 0.000;
+	D_i[1] = (34.0/7.0)*D_i[0]*D_i[0]/3.0;
+	D_a_i[1] = D_i[1]/ai;
 	
 	D[1] = D_i[1];
 	D_a[1] = D_a_i[1];
@@ -457,8 +458,8 @@ int main(int argc,char *argv[])
 			D_i[0] = D[0];
 			D_a_i[0] = D_a[0];
 
-			D[1] = 4.86*D[0]*D[0]/3.0;
-			D_a[1] = D_a[0];//1.0;
+			//D[1] = 4.858*D[0]*D[0]/3.0;
+			//D_a[1] = D_a[0];//1.0;
 		
 			D_i[1] = D[1];
 			D_a_i[1] = D_a[1];
@@ -477,7 +478,7 @@ int main(int argc,char *argv[])
 		D_a_rk[1][0] = D_a[1]; 
 		
 		if(!(burn)&&((cntr%100)==0))
-		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",a/ai,D[0],D[1],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],3.0*D[1]/(D[0]*D[0]));
+		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",a,D[0],D[1],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],3.0*D[1]/(D[0]*D[0]));
 
 		
 
