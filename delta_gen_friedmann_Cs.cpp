@@ -107,7 +107,7 @@ class cosmo_bigravity
 		omega_dm_0 = omega_dm_0_val;
 		H0 = (h_val/c_box)*0.001;
 		model = model;
-		B1 = 6.0;
+		B1 = 0.5;
 		B0 = 3.0*(1.0-omega_dm_0-B1*B1/3.0);
 		ratio = (1.0-omega_dm_0)/(omega_dm_0);
 		printf("H0 %lf\n",H0);
@@ -221,8 +221,9 @@ class cosmo_bigravity
 		c1 = kappa1/lambda1;
 
 		kappa2 = 27.0*( -36.0*B1*B1*theta*theta*omega_dm_0*omega_dm_0 -24.0*B1*B1*B1*B1*theta*theta*omega_dm_0*omega_dm_0 
-				-4.0*pow(B1,6.0)*theta*theta*omega_dm_0*omega_dm_0 + 72.0*B1*B1*theta*theta*omega_dm_0*omega_dm_0
-				-24.0*pow(B1,4.0)*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0 - 3.0*pow(B1,4.0)*theta*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0
+				-4.0*pow(B1,6.0)*theta*theta*omega_dm_0*omega_dm_0 + 72.0*B1*B1*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0
+				-24.0*pow(B1,4.0)*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0 + 9.0*B1*B1*theta*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0
+				- 3.0*pow(B1,4.0)*theta*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0
 				-36.0*B1*B1*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0*omega_dm_0 - 9.0*B1*B1*theta*theta*theta*pow(omega_dm_0,4.0)
 				+ 45.0*B1*B1*pow(theta,4.0)*pow(omega_dm_0,4.0));
 		lambda2 = 9.0+6.0*B1*B1+pow(B1,4.0) - 18.0*omega_dm_0 + 6.0*B1*B1*omega_dm_0 
@@ -397,7 +398,7 @@ int main(int argc,char *argv[])
 
 	string fname = "delta_";
 	string argstr = argv[1];
-	string extstr = "_1.txt";
+	string extstr = "_B1_0p5.txt";
 	fname = fname+argstr+extstr;
 	printf("%s\n",fname.c_str());
 
