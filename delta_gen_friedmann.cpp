@@ -105,7 +105,7 @@ class cosmo_bigravity
 		omega_dm_0 = omega_dm_0_val;
 		H0 = (h_val/c_box)*0.001;
 		model = model;
-		B1 = 0.00;
+		B1 = 0.0;
 		B0 = 3.0*(1.0-omega_dm_0-B1*B1/3.0);
 		ratio = (1.0-omega_dm_0)/(omega_dm_0);
 		printf("H0 %lf\n",H0);
@@ -318,7 +318,7 @@ int main(int argc,char *argv[])
 
 	string fname = "delta_";
 	string argstr = argv[1];
-	string extstr = ".txt";
+	string extstr = "_oc.txt";
 	fname = fname+argstr+extstr;
 	printf("%s\n",fname.c_str());
 
@@ -349,7 +349,7 @@ int main(int argc,char *argv[])
 	a0 = 1.0;
 
 	
-	delta_a_i = 0.01;
+	delta_a_i = 0.5;
 	delta_i = delta_a_i*ai;
 	
 	delta = delta_i;
@@ -383,11 +383,11 @@ int main(int argc,char *argv[])
 		for(i=1;i<=4;++i)
 		{
 			if(theory==0)			
-			acc  = cosmo_model_lcdm.lin_delta_aa( ak,  delta_rk[0], delta_a_rk[0]);
+			acc  = cosmo_model_lcdm.delta_aa( ak,  delta_rk[0], delta_a_rk[0]);
 			if(theory==1)			
 			acc  = cosmo_model_dgp.lin_delta_aa( ak,  delta_rk[0], delta_a_rk[0]);
 			if(theory==2)			
-			acc  = cosmo_model_bigravity.lin_delta_aa( ak,  delta_rk[0], delta_a_rk[0]);
+			acc  = cosmo_model_bigravity.delta_aa( ak,  delta_rk[0], delta_a_rk[0]);
 
 			
 

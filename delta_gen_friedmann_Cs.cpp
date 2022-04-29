@@ -73,7 +73,7 @@ class cosmo_lcdm
 
 	}
 
-	void pert_delta_aa(double *acc, double D[2], double D_a[2],double a,double a0=1.0)
+	void pert_delta_aa(double *acc, double D[3], double D_a[3],double a,double a0=1.0)
 	{
 		double HbtbyHb2;	
 		double c1,c2;
@@ -86,7 +86,7 @@ class cosmo_lcdm
 
 		acc[0] = -(3.0 + HbtbyHb2)*D_a[0]/a - 3.0*c1*D[0]/(a*a);
 		acc[1] = -(3.0 + HbtbyHb2)*D_a[1]/a + (8.0/3.0)*D_a[0]*D_a[0] - 3.0*c1*D[1]/(a*a) - 6.0*(c1+c2)*D[0]*D[0]/(a*a);
-
+		acc[2] = delta_aa(a, D[2],  D_a[2]);
 
 
 	}
@@ -107,7 +107,7 @@ class cosmo_bigravity
 		omega_dm_0 = omega_dm_0_val;
 		H0 = (h_val/c_box)*0.001;
 		model = model;
-		B1 = 0.5;
+		B1 = 3.0;
 		B0 = 3.0*(1.0-omega_dm_0-B1*B1/3.0);
 		ratio = (1.0-omega_dm_0)/(omega_dm_0);
 		printf("H0 %lf\n",H0);
@@ -343,7 +343,7 @@ class cosmo_dgp
 	}
 
 
-	void pert_delta_aa(double *acc, double D[2], double D_a[2],double a,double a0=1.0)
+	void pert_delta_aa(double *acc, double D[3], double D_a[3],double a,double a0=1.0)
 	{
 		double HbtbyHb2, diff, theta,kappa1,lambda1,kappa2,lambda2,omega_dm;	
 		double c1,c2;
@@ -370,8 +370,13 @@ class cosmo_dgp
 
 		c2 = kappa2/lambda2;
 
+		diff = H_Diff(a, D[2]);
+
 		acc[0] = -(3.0 + HbtbyHb2)*D_a[0]/a - 3.0*c1*D[0]/(a*a);
 		acc[1] = -(3.0 + HbtbyHb2)*D_a[1]/a + (8.0/3.0)*D_a[0]*D_a[0] - 3.0*c1*D[1]/(a*a) - 6.0*(c1+c2)*D[0]*D[0]/(a*a);
+		acc[2] = delta_aa(a, D[2],  D_a[2]);
+			 
+			  
 
 
 
@@ -389,8 +394,8 @@ class cosmo_dgp
 int main(int argc,char *argv[])
 {
 
-	double D[2],D_a[2],D_rk[2][5], D_a_rk[2][5], acc[2];
-	double D_i[2], D_a_i[2];
+	double D[3],D_a[3],D_rk[5][3], D_a_rk[5][3], acc[3];
+	double D_i[3], D_a_i[3];
 
 	double a,ai,ai_burn,a0,ak,da;
 	double rk_coef[4] = {0.5,0.5,1.0,1.0};
@@ -399,7 +404,7 @@ int main(int argc,char *argv[])
 
 	string fname = "delta_";
 	string argstr = argv[1];
-	string extstr = "_B1_0p5.txt";
+	string extstr = "_B1_3f.txt";
 	fname = fname+argstr+extstr;
 	printf("%s\n",fname.c_str());
 
@@ -430,7 +435,7 @@ int main(int argc,char *argv[])
 	a0 = 1.0;
 
 
-	D_a_i[0] = 0.01;
+	D_a_i[0] = 1.0;
 	D_i[0] = ai_burn*D_a_i[0];
 	
 	D[0] = D_i[0];
@@ -475,7 +480,7 @@ int main(int argc,char *argv[])
 			D_i[1] = D[1];
 			D_a_i[1] = D_a[1];
 		
-			printf("intial dc is %lf  %lf\n",D_i[0],D_i[1]);
+			printf("intial dc is %lf  %lf  %lf\n",D_i[0],D_i[1],D_i[2]);
 
 
 		}
@@ -485,52 +490,53 @@ int main(int argc,char *argv[])
 		D_rk[0][0] = D[0];
 		D_a_rk[0][0] = D_a[0]; 
 
-		D_rk[1][0] = D[1];
-		D_a_rk[1][0] = D_a[1]; 
+		D_rk[0][1] = D[1];
+		D_a_rk[0][1] = D_a[1]; 
 
-		D_rk[2][0] = D[2];
-		D_a_rk[2][0] = D_a[2]; 
+		D_rk[0][2] = D[2];
+		D_a_rk[0][2] = D_a[2]; 
 		
 		if(!(burn)&&((cntr%100)==0))
-		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",a,D[0],D[1],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],3.0*D[1]/(D[0]*D[0])
-			,3.0*D[2]/(D[0]*D[0]);
+		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
+			a,D[0],D[1],D[2],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[2]/D_i[2],
+			3.0*D[1]/(D[0]*D[0]),3.0*D[2]/(D[0]*D[0]));
 
 		
 
 		for(i=1;i<=4;++i)
 		{
 			if(theory==0)	
-			cosmo_model_lcdm.pert_delta_aa(acc, D, D_a,a);		
+			cosmo_model_lcdm.pert_delta_aa(acc, D_rk[0], D_a_rk[0],a);		
 			
 			if(theory==1)			
-			cosmo_model_dgp.pert_delta_aa(acc, D, D_a,a);
+			cosmo_model_dgp.pert_delta_aa(acc, D_rk[0], D_a_rk[0],a);
 
 			if(theory==2)			
-			cosmo_model_bigravity.pert_delta_aa(acc, D, D_a,a);
+			cosmo_model_bigravity.pert_delta_aa(acc, D_rk[0], D_a_rk[0],a);
 
 			
 		   for(j=0;j<3;++j)
-			{D_a_rk[j][i] = da*acc[j];
-			 D_rk[j][i] = da*D_a_rk[j][0];
+			{D_a_rk[i][j] = da*acc[j];
+			 D_rk[i][j] = da*D_a_rk[0][j];
 				
 
 			 
 
-			 D_rk[j][0] = D[j] + rk_coef[i-1]*D_rk[j][i];
-			 D_a_rk[j][0] = D_a[j] + rk_coef[i-1]*D_a_rk[j][i];
+			 D_rk[0][j] = D[j] + rk_coef[i-1]*D_rk[i][j];
+			 D_a_rk[0][j] = D_a[j] + rk_coef[i-1]*D_a_rk[i][j];
 			}
 
 			ak = a + rk_coef[i-1]*da;
 			if(a==ai)
-			 printf("acc %.10lf  %.10lf\n",D_rk[0][i],D_rk[1][i]);
+			 printf("acc %.10lf  %.10lf\n",D_rk[i][0],D_rk[i][1]);
 
 		}
 
 
 	    for(j=0;j<3;++j)
 		{
-		 D[j] = D[j] + (1.0/6.0)*(D_rk[j][1]+2.0*D_rk[j][2]+2.0*D_rk[j][3]+D_rk[j][4]);
-		 D_a[j] = D_a[j] + (1.0/6.0)*(D_a_rk[j][1]+2.0*D_a_rk[j][2]+2.0*D_a_rk[j][3]+D_a_rk[j][4]);
+		 D[j] = D[j] + (1.0/6.0)*(D_rk[1][j]+2.0*D_rk[2][j]+2.0*D_rk[3][j]+D_rk[4][j]);
+		 D_a[j] = D_a[j] + (1.0/6.0)*(D_a_rk[1][j]+2.0*D_a_rk[2][j]+2.0*D_a_rk[3][j]+D_a_rk[4][j]);
 
 		}
 
