@@ -199,7 +199,7 @@ class cosmo_bigravity
 	}
 
 
-	void pert_delta_aa(double *acc, double D[2], double D_a[2],double a,double a0=1.0)
+	void pert_delta_aa(double *acc, double D[3], double D_a[3],double a,double a0=1.0)
 	{
 		double HbtbyHb2, diff, theta,kappa1,lambda1,kappa2,lambda2;	
 		double c1,c2;
@@ -236,6 +236,7 @@ class cosmo_bigravity
 
 		acc[0] = -(3.0 + HbtbyHb2)*D_a[0]/a - 3.0*c1*D[0]/(a*a);
 		acc[1] = -(3.0 + HbtbyHb2)*D_a[1]/a + (8.0/3.0)*D_a[0]*D_a[0] - 3.0*c1*D[1]/(a*a) - 6.0*(c1+c2)*D[0]*D[0]/(a*a);
+		acc[2] = delta_aa(a, D[2],  D_a[2]);
 
 
 
@@ -441,6 +442,12 @@ int main(int argc,char *argv[])
 	D[1] = D_i[1];
 	D_a[1] = D_a_i[1];
 
+	D_i[2] = D_i[0];
+	D_a_i[2] = D_a_i[0];
+	
+	D[2] = D_i[2];
+	D_a[2] = D_a_i[2];
+
 
 
 	int burn = 1, cntr;
@@ -458,6 +465,9 @@ int main(int argc,char *argv[])
 
 			D_i[0] = D[0];
 			D_a_i[0] = D_a[0];
+	
+			D_i[2] = D[2];
+			D_a_i[2] = D_a[2];
 
 			//D[1] = 4.858*D[0]*D[0]/3.0;
 			//D_a[1] = D_a[0];//1.0;
@@ -477,9 +487,13 @@ int main(int argc,char *argv[])
 
 		D_rk[1][0] = D[1];
 		D_a_rk[1][0] = D_a[1]; 
+
+		D_rk[2][0] = D[2];
+		D_a_rk[2][0] = D_a[2]; 
 		
 		if(!(burn)&&((cntr%100)==0))
-		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",a,D[0],D[1],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],3.0*D[1]/(D[0]*D[0]));
+		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",a,D[0],D[1],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],3.0*D[1]/(D[0]*D[0])
+			,3.0*D[2]/(D[0]*D[0]);
 
 		
 
@@ -495,7 +509,7 @@ int main(int argc,char *argv[])
 			cosmo_model_bigravity.pert_delta_aa(acc, D, D_a,a);
 
 			
-		   for(j=0;j<2;++j)
+		   for(j=0;j<3;++j)
 			{D_a_rk[j][i] = da*acc[j];
 			 D_rk[j][i] = da*D_a_rk[j][0];
 				
@@ -513,7 +527,7 @@ int main(int argc,char *argv[])
 		}
 
 
-	    for(j=0;j<2;++j)
+	    for(j=0;j<3;++j)
 		{
 		 D[j] = D[j] + (1.0/6.0)*(D_rk[j][1]+2.0*D_rk[j][2]+2.0*D_rk[j][3]+D_rk[j][4]);
 		 D_a[j] = D_a[j] + (1.0/6.0)*(D_a_rk[j][1]+2.0*D_a_rk[j][2]+2.0*D_a_rk[j][3]+D_a_rk[j][4]);
