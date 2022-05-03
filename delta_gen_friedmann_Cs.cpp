@@ -98,19 +98,20 @@ class cosmo_bigravity
 {
 
 	private:
-	double omega_dm_0, H0, ratio,b,beta,gamma,B0,B1;
+	double omega_dm_0, H0, ratio,b,beta,gamma,B0;
 	int model;
 
 	public:
-	cosmo_bigravity(double omega_dm_0_val=0.3,double h_val=0.7,int model=2)
+	double  B1;
+	cosmo_bigravity(double omega_dm_0_val=0.3,double B1param=0.0,double h_val=0.7,int model=2)
 	{
 		omega_dm_0 = omega_dm_0_val;
 		H0 = (h_val/c_box)*0.001;
 		model = model;
-		B1 = 3.0;
+		B1 = B1param;
 		B0 = 3.0*(1.0-omega_dm_0-B1*B1/3.0);
 		ratio = (1.0-omega_dm_0)/(omega_dm_0);
-		printf("H0 %lf\n",H0);
+		printf("H0 %lf  B1  %lf\n",H0,B1);
 
 	}
 
@@ -399,35 +400,49 @@ int main(int argc,char *argv[])
 
 	double a,ai,ai_burn,a0,ak,da;
 	double rk_coef[4] = {0.5,0.5,1.0,1.0};
+	double om_dm_0, model_param;
 
 	int i,j,theory;
 
-	string fname = "delta_";
+	string fname = "delta";
 	string argstr = argv[1];
-	string extstr = "_B1_3f.txt";
-	fname = fname+argstr+extstr;
-	printf("%s\n",fname.c_str());
+	string om_str = argv[2];
+	string mod_str = argv[3];
+	string extstr = ".txt";
+	string us = "_";
+	
+	om_dm_0 = atof(argv[2]);
+	model_param = atof(argv[3]);
+	
 
-	FILE *fp = fopen(fname.c_str(),"w");
-	cosmo_lcdm cosmo_model_lcdm(1.0);
-	cosmo_dgp cosmo_model_dgp(0.3);
-	cosmo_bigravity cosmo_model_bigravity(0.3);
+	
+	cosmo_lcdm cosmo_model_lcdm(om_dm_0);
+	cosmo_dgp cosmo_model_dgp(om_dm_0);
+	cosmo_bigravity cosmo_model_bigravity(om_dm_0,model_param);
 	
 	if(!strcmp(argv[1],"lcdm"))
-	{
+	{	fname = fname+us+argstr+us+"om"+us+om_str+extstr;
 		printf("lcdm\n");
 		theory = 0;
 	}
 	else
 	if(!strcmp(argv[1],"dgp"))
-	{	printf("dgp\n");
+	{	
+		fname = fname+us+argstr+us+"om"+us+om_str+extstr;
+		printf("dgp\n");
 		theory = 1;
 	}
 	else
 	if(!strcmp(argv[1],"bimetric"))
-	{	printf("bimetric\n");
+	{	
+		fname = fname+us+argstr+us+"om"+us+om_str+us+"B1"+us+mod_str+extstr;
+		printf("bimetric\n");
+		
 		theory = 2;
 	}
+
+	FILE *fp = fopen(fname.c_str(),"w");
+	printf("%s\n",fname.c_str());
 
 	da = 0.0000001;
 	ai = 0.001;
@@ -544,6 +559,6 @@ int main(int argc,char *argv[])
 	}
 
 
-	
+	fclose(fp);
 
 }
