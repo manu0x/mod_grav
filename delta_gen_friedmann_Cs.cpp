@@ -388,21 +388,33 @@ class cosmo_dgp
 
 
 
-
-
-
-
-int main(int argc,char *argv[])
+int f_sigma_cal(int argc,char *argv[],double sig8,double *x_lst,double *fs8,int n,int ax=1)
 {
-
 	double D[3],D_a[3],D_rk[5][3], D_a_rk[5][3], acc[3];
 	double D_i[3], D_a_i[3];
 
 	double a,ai,ai_burn,a0,ak,da;
 	double rk_coef[4] = {0.5,0.5,1.0,1.0};
 	double om_dm_0, model_param;
+	double D1_0;
+	double a_lst[n];	
+	int a_lst_cntr=0;
+	double a_lst_now ;
+	
 
 	int i,j,theory;
+
+	for(i=0;i<n;++i)
+	{
+		if(ax)
+		a_lst[i] = x_lst[i];
+		
+		else
+		a_lst[i] = 1.0/(1.0+x_lst[i]);
+
+
+	}
+
 
 	string fname = "delta";
 	string argstr = argv[1];
@@ -421,28 +433,33 @@ int main(int argc,char *argv[])
 	cosmo_bigravity cosmo_model_bigravity(om_dm_0,model_param);
 	
 	if(!strcmp(argv[1],"lcdm"))
-	{	fname = fname+us+argstr+us+"om"+us+om_str+extstr;
+	{	fname = fname+us+argstr+us+"om"+us+om_str;
 		printf("lcdm\n");
 		theory = 0;
 	}
 	else
 	if(!strcmp(argv[1],"dgp"))
 	{	
-		fname = fname+us+argstr+us+"om"+us+om_str+extstr;
+		fname = fname+us+argstr+us+"om"+us+om_str;
 		printf("dgp\n");
 		theory = 1;
 	}
 	else
 	if(!strcmp(argv[1],"bimetric"))
 	{	
-		fname = fname+us+argstr+us+"om"+us+om_str+us+"B1"+us+mod_str+extstr;
+		fname = fname+us+argstr+us+"om"+us+om_str+us+"B1"+us+mod_str;
 		printf("bimetric\n");
 		
 		theory = 2;
 	}
 
+	string fname_fs8 = fname+"_fs8";
+	fname = fname+extstr;
+	fname_fs8 = fname_fs8+extstr;
+
 	FILE *fp = fopen(fname.c_str(),"w");
-	printf("%s\n",fname.c_str());
+	FILE *fp_fs8 = fopen(fname_fs8.c_str(),"w");
+	printf("%s %s\n",fname.c_str(),fname_fs8.c_str());
 
 	da = 0.0000001;
 	ai = 0.001;
@@ -477,6 +494,14 @@ int main(int argc,char *argv[])
 	for(a=ai_burn,cntr=0;a<=a0;a+=da,++cntr)
 	{
 		ak = a;
+
+		if(a>=a_lst_now)
+		{
+			fs8[a_lst_cntr] = sig8*a*D_a[0];
+
+			++a_lst_cntr;
+			a_lst_now = a_lst[a_lst_cntr];
+		}
 
 
 		if((a>ai)&&(burn))
@@ -553,12 +578,109 @@ int main(int argc,char *argv[])
 		 D[j] = D[j] + (1.0/6.0)*(D_rk[1][j]+2.0*D_rk[2][j]+2.0*D_rk[3][j]+D_rk[4][j]);
 		 D_a[j] = D_a[j] + (1.0/6.0)*(D_a_rk[1][j]+2.0*D_a_rk[2][j]+2.0*D_a_rk[3][j]+D_a_rk[4][j]);
 
+		
+
 		}
 
 
 	}
 
+	D1_0 = D[0];
+
+	for(i=0;i<n;++i)
+	{
+
+		fs8[i] = fs8[i]/D1_0;
+		if(ax)
+		fprintf(fp_fs8,"%lf\t%lf\n",a_lst[i],fs8[i]);
+		else
+		fprintf(fp_fs8,"%lf\t%lf\n",x_lst[i],fs8[i]);
+	}
+
 
 	fclose(fp);
+	fclose(fp_fs8);
+	
+	return(1);
+
 
 }
+
+
+double * read_fs8_data(FILE *fp_data,int &n,int up_bnd = 100)
+{
+
+	int fpr=1,data_cnt=0;
+	double *fs = new double[up_bnd];
+	double *erl = new double[up_bnd];
+	double *eru = new double[up_bnd];
+
+
+	while(fpr>0)
+	{
+		fpr = fscanf(fp_data,"%lf\t%lf\t%lf\n",&fs[data_cnt],&erl[data_cnt],&eru[data_cnt]);
+		if(fpr>0)
+		++data_cnt;
+		//if(data_cnt<10)
+		//printf("%d %d \n",fpr,data_cnt);
+		
+
+	}
+
+
+	double *data = new double[data_cnt];
+	for(int i=0;i<data_cnt;++i)
+	{
+		data[i] = fs[i];
+		//printf("%d %lf %lf %lf\n",i,data[i],erl[i],eru[i]);
+		
+
+	}
+	
+	n = data_cnt;
+
+	delete[] fs;
+	delete[] erl;
+	delete[] eru;
+
+	return data;
+
+}
+
+
+int main(int argc,char *argv[])
+{
+	double sig8  = 0.79;
+	double a_l[12] = {0.02,0.08,0.15,0.19,0.23,0.35,0.45,0.55,0.65,0.78,0.89,0.999};
+	double z_l[12] = {0.02,0.08,0.15,0.19,0.23,0.35,0.45,0.55,0.65,0.78,0.89,0.999};
+	int n = 12,b;
+	int ax = 0;
+	double *data;
+
+	double fs8[12];
+
+	FILE *fpdata = fopen("data.txt","r");
+	data = read_fs8_data(fpdata,n);
+	printf("n is %d\n",n);
+	for(int i=0;i<n;++i)
+	{
+		
+		printf("%d %lf\n",i,data[i]);
+		
+
+	}
+
+	
+
+	b = f_sigma_cal( argc,argv, sig8,a_l,fs8,n,ax);
+
+}
+
+
+
+
+
+
+
+
+///##########################################################	
