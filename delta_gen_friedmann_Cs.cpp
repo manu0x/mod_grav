@@ -388,7 +388,7 @@ class cosmo_dgp
 
 
 
-int f_sigma_cal(int argc,char *argv[],double sig8,double *x_lst,double *fs8,int n,int ax=1)
+int f_sigma_cal(int argc,char *argv[],double sig8,double *data,double *fs8,int n,int ax=1)
 {
 	double D[3],D_a[3],D_rk[5][3], D_a_rk[5][3], acc[3];
 	double D_i[3], D_a_i[3];
@@ -404,17 +404,19 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *x_lst,double *fs8,int 
 
 	int i,j,theory;
 
-	for(i=0;i<n;++i)
+	for(i=0,j=0;i<n;++i,j+=2)
 	{
 		if(ax)
-		a_lst[i] = x_lst[i];
+		a_lst[i] = data[j];
 		
 		else
-		a_lst[i] = 1.0/(1.0+x_lst[i]);
+		a_lst[i] = 1.0/(1.0+data[j]);
+
+		
 
 
 	}
-
+	
 
 	string fname = "delta";
 	string argstr = argv[1];
@@ -422,6 +424,8 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *x_lst,double *fs8,int 
 	string mod_str = argv[3];
 	string extstr = ".txt";
 	string us = "_";
+
+	
 	
 	om_dm_0 = atof(argv[2]);
 	model_param = atof(argv[3]);
@@ -431,6 +435,8 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *x_lst,double *fs8,int 
 	cosmo_lcdm cosmo_model_lcdm(om_dm_0);
 	cosmo_dgp cosmo_model_dgp(om_dm_0);
 	cosmo_bigravity cosmo_model_bigravity(om_dm_0,model_param);
+
+	
 	
 	if(!strcmp(argv[1],"lcdm"))
 	{	fname = fname+us+argstr+us+"om"+us+om_str;
@@ -488,6 +494,7 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *x_lst,double *fs8,int 
 
 
 	int burn = 1, cntr;
+	a_lst_now = a_lst[0];
 
 	//fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\n",a/ai,delta,delta_a,delta/delta_i,delta_a/delta_a_i);
 
@@ -495,9 +502,10 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *x_lst,double *fs8,int 
 	{
 		ak = a;
 
-		if(a>=a_lst_now)
+		if((a>=a_lst_now)&&(a_lst_cntr<n))
 		{
 			fs8[a_lst_cntr] = sig8*a*D_a[0];
+			printf("\nyy %d %lf %lf %lf\n\n",a_lst_cntr,a_lst[a_lst_cntr],data[2*a_lst_cntr],a);
 
 			++a_lst_cntr;
 			a_lst_now = a_lst[a_lst_cntr];
@@ -587,14 +595,14 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *x_lst,double *fs8,int 
 
 	D1_0 = D[0];
 
-	for(i=0;i<n;++i)
+	for(i=0,j=0;i<n;++i,j+=2)
 	{
 
 		fs8[i] = fs8[i]/D1_0;
 		if(ax)
-		fprintf(fp_fs8,"%lf\t%lf\n",a_lst[i],fs8[i]);
+		fprintf(fp_fs8,"%lf\t%lf\t%lf\n",a_lst[i],fs8[i],data[j+1]);
 		else
-		fprintf(fp_fs8,"%lf\t%lf\n",x_lst[i],fs8[i]);
+		fprintf(fp_fs8,"%lf\t%lf\t%lf\n",data[j],fs8[i],data[j+1]);
 	}
 
 
@@ -612,13 +620,14 @@ double * read_fs8_data(FILE *fp_data,int &n,int up_bnd = 100)
 
 	int fpr=1,data_cnt=0;
 	double *fs = new double[up_bnd];
+	double *xs = new double[up_bnd];
 	double *erl = new double[up_bnd];
 	double *eru = new double[up_bnd];
 
 
 	while(fpr>0)
 	{
-		fpr = fscanf(fp_data,"%lf\t%lf\t%lf\n",&fs[data_cnt],&erl[data_cnt],&eru[data_cnt]);
+		fpr = fscanf(fp_data,"%lf\t%lf\t%lf\n",&xs[data_cnt],&fs[data_cnt],&erl[data_cnt],&eru[data_cnt]);
 		if(fpr>0)
 		++data_cnt;
 		//if(data_cnt<10)
@@ -628,10 +637,12 @@ double * read_fs8_data(FILE *fp_data,int &n,int up_bnd = 100)
 	}
 
 
-	double *data = new double[data_cnt];
-	for(int i=0;i<data_cnt;++i)
+	double *data = new double[data_cnt*2];
+	
+	for(int i=0,j=0;i<data_cnt;++i,j+=2)
 	{
-		data[i] = fs[i];
+		data[j] = xs[i];
+		data[j+1] = fs[i];
 		//printf("%d %lf %lf %lf\n",i,data[i],erl[i],eru[i]);
 		
 
@@ -657,22 +668,23 @@ int main(int argc,char *argv[])
 	int ax = 0;
 	double *data;
 
-	double fs8[12];
+	
 
 	FILE *fpdata = fopen("data.txt","r");
 	data = read_fs8_data(fpdata,n);
+	double fs8[n];
 	printf("n is %d\n",n);
-	for(int i=0;i<n;++i)
+	for(int i=0;i<(2*n-1);i+=2)
 	{
 		
-		printf("%d %lf\n",i,data[i]);
+		printf("%d %lf %lf\n",i,data[i],data[i+1]);
 		
 
 	}
 
 	
 
-	b = f_sigma_cal( argc,argv, sig8,a_l,fs8,n,ax);
+	b = f_sigma_cal( argc,argv, sig8,data,fs8,n,ax);
 
 }
 
