@@ -1,3 +1,5 @@
 test*/
 *.txt
 *.so
+ipynb_checkpoints/
+__pychache
