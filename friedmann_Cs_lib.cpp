@@ -125,6 +125,16 @@ class cosmo_bigravity
 
 	}
 
+	double HbyH0(double a,double a0=1.0)
+	{
+		double val,omega;
+		omega = omega_dm_0*pow(a0/a,3.0);
+		val = sqrt(   0.5*omega + B0/6.0  + sqrt((0.5*omega + B0/6.0)*(0.5*omega + B0/6.0) + B1*B1/3.0 ) );
+		return(val);
+
+
+	}
+
 
 	double Hb_t_by_Hb2(double a,double a0=1.0)
 	{
@@ -254,35 +264,36 @@ class cosmo_bigravity
 
 
 
-int f_sigma_log_like_bimetric(double omega_dm0,double B1,double sig8,double *data,double *fs8,int n,int ax=1,int print_file=0)
+int f_sigma_log_like_bimetric(double omega_dm0,double B1,double sig8,double *data,double *fs8,double *ratio_den,int *cn,int n,int ax=1,int print_file=0,double a0=1.0)
 {
 	double D[3],D_a[3],D_rk[5][3], D_a_rk[5][3], acc[3];
 	double D_i[3], D_a_i[3];
 
-	double a,ai,ai_burn,a0,ak,da;
+	double a,ai,ai_burn,ak,da;
 	double rk_coef[4] = {0.5,0.5,1.0,1.0};
 	double om_dm_0, model_param;
 	double D1_0;
-	double a_lst[n];	
+	double a_lst[n];
+	double H_H0[n];	
 	int a_lst_cntr=0;
 	double a_lst_now ;
 	
 	double log_like;
 	
 
-	int i,j;
+	int i,j,cn_i;
 
 	FILE *fp_fs8 = fopen("bimetric_fs8.txt","w");
 
 	om_dm_0 = omega_dm0;
 
-	for(i=0,j=0;i<n;++i,j+=2)
+	for(i=0,j=0;i<n;++i,++j)
 	{
 		if(ax)
 		a_lst[i] = data[j];
 		
 		else
-		a_lst[i] = 1.0/(1.0+data[j]);
+		a_lst[i] = a0/(1.0+data[j]);
 
 		
 
@@ -331,10 +342,16 @@ int f_sigma_log_like_bimetric(double omega_dm0,double B1,double sig8,double *dat
 
 		if((a>=a_lst_now)&&(a_lst_cntr<n))
 		{
-			fs8[a_lst_cntr] = sig8*a*D_a[0];
+				
+			for(cn_i=0;cn_i<cn[a_lst_cntr];++cn_i)
+			{fs8[a_lst_cntr+cn_i] = sig8*a*D_a[0];
+
+			 H_H0[a_lst_cntr+cn_i] = cosmo_model_bigravity.HbyH0( a_lst[a_lst_cntr+cn_i]);
+			}
+			
 			
 
-			++a_lst_cntr;
+			a_lst_cntr+=cn[i];
 			a_lst_now = a_lst[a_lst_cntr];
 		}
 
@@ -407,17 +424,18 @@ int f_sigma_log_like_bimetric(double omega_dm0,double B1,double sig8,double *dat
 
 	D1_0 = D[0];
 
-	for(i=0,j=0;i<n;++i,j+=2)
+	for(i=0,j=0;i<n;++i,++j)
 	{
 
-		fs8[i] = fs8[i]/D1_0;
+		fs8[i] = (fs8[i]/D1_0)*(H_H0[i]/ratio_den[i]);
+	
 		if(ax)
 		{if(print_file)
-		 fprintf(fp_fs8,"%lf\t%lf\t%lf\n",a_lst[i],fs8[i],data[j+1]);
+		 fprintf(fp_fs8,"%lf\t%lf\t%lf\n",a_lst[i],fs8[i],data[j]);
 		}
 		else
 		{if(print_file)
-		  fprintf(fp_fs8,"%lf\t%lf\t%lf\n",data[j],fs8[i],data[j+1]);
+		  fprintf(fp_fs8,"%lf\t%lf\t%lf\n",data[j],fs8[i],data[j]);
 
 		}
 	}
@@ -477,9 +495,11 @@ double * read_fs8_data(FILE *fp_data,int &n,int up_bnd = 100)
 
 
 extern "C" {
-    int bimetric_fs8_log_like(double omega_dm0,double B1,double sig8,double *data,double *fs8,int n,int ax=1,int print_file=0)
+    int bimetric_fs8_log_like(double omega_dm0,double B1,double sig8,double *data,double *fs8,double *ratio_den,int *cn,int n,int ax=1,int print_file=0,double a0=1.0)
     {
-        return f_sigma_log_like_bimetric(omega_dm0, B1, sig8,data,fs8, n,ax,print_file);
+        return f_sigma_log_like_bimetric(omega_dm0,B1,sig8,data,fs8,ratio_den,cn, n, ax, print_file, a0);
+
+	
     }
 }
 
