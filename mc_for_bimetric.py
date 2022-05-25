@@ -36,7 +36,12 @@ lib_h.restype = ctypes.c_int
 
 
 
-def calc_likelihood(z,data,rat_den,C_I,cn,s,si,omega_dm_0=0.3,B1=0.0,s8=0.79):
+def log_likelihood(theta,z,data,rat_den,C_I,cn,s,si):
+   
+  
+    omega_dm_0 = theta[0]
+    B1 = theta[1]
+    s8 = theta[2]
     n = z.shape[0]
     zz = ctypes.c_double*(n)
     ratio_den = ctypes.c_double*(n)
@@ -52,8 +57,9 @@ def calc_likelihood(z,data,rat_den,C_I,cn,s,si,omega_dm_0=0.3,B1=0.0,s8=0.79):
     zz = np.ctypeslib.as_ctypes(zw) 
     ratio_den = np.ctypeslib.as_ctypes(rat_denw) 
     fs8 = np.ctypeslib.as_ctypes(np.zeros((n,)))
+    #print(cnw[1:10],cn)
 
-    l = lib_h.bimetric_fs8_log_like(omega_dm_0,B1,s8,zz,fs8,ratio_den,cnw,n,1,1,1.0)  
+    l = lib_h.bimetric_fs8_log_like(omega_dm_0,B1,s8,zz,fs8,ratio_den,cnw,n,0,1,1.0)  
     fs8 = np.ctypeslib.as_array(fs8)
     data = np.ctypeslib.as_array(data)
     fs8 = np.reshape(fs8,(fs8.shape[0],1))
@@ -68,4 +74,22 @@ def calc_likelihood(z,data,rat_den,C_I,cn,s,si,omega_dm_0=0.3,B1=0.0,s8=0.79):
 
 
 
+
+def log_prior(theta):
+    omega_dm_0 = theta[0]
+    B1 = theta[1]
+    s8 = theta[2]
+
+    if 0.01<omega_dm_0<0.9 and 0.0<=B1<=6.0 and 0.01<s8<1.0:
+        return 0.0
+    else:
+        return -np.inf
+
+
+def log_post(theta,z,data,rat_den,C_I,cn,s,si):
+    log_pr = log_prior(theta)
+    if not(np.isfinite(log_pr)):
+        return -np.inf
+    else:
+        return log_pr + log_likelihood(theta,z,data,rat_den,C_I,cn,s,si)
 
