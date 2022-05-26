@@ -17,11 +17,11 @@ import matplotlib.pyplot as plt
 
 cwd =  os.getcwd()
 
+code_dir  = (os.path.dirname(os.path.realpath(__file__)))
 
 
 
-
-lib_h = ctypes.CDLL(cwd + "/friedmann_Cs_lib.so") 
+lib_h = ctypes.CDLL(code_dir + "/friedmann_Cs_lib.so") 
 
 
 

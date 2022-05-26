@@ -7,11 +7,14 @@
 import ctypes
 import sys
 import os 
+import time
 import numpy as np
 from ctypes import POINTER
 import matplotlib.pyplot as plt
 from mc_for_bimetric import log_likelihood,log_post
 import emcee
+from schwimmbad import MPIPool
+from mpi4py import MPI
 
 
 
@@ -59,30 +62,61 @@ z,f,ci,r,s,si,cn = load_data()
 
 
 
-l = log_post([0.4,0.0,0.79],z,f,r,ci,cn,s,si)
+#l = log_post([0.4,0.0,0.79],z,f,r,ci,cn,s,si)
 
 
 
 
-nwalkers = 100
+
+
 ndim = 3
-ini_guess =  np.array([0.3,0.0,0.79])+1e-4 * np.random.randn(nwalkers, ndim)
-
-
-filename = "run.h5"
-backend = emcee.backends.HDFBackend(filename)
-backend.reset(nwalkers, ndim)
-
-sampler = emcee.EnsembleSampler(nwalkers, ndim, log_post, args=(z,f,r,ci,cn,s,si))
-
-
-
-sampler.run_mcmc(ini_guess, 100, progress=True);
+n_steps = int(sys.argv[1])
+nwalkers = int(sys.argv[2])
+print(n_steps,nwalkers)
 
 
 
 
-samples =sampler.get_chain()
+
+
+with MPIPool() as pool:
+	if not pool.is_master():
+		pool.wait()
+		sys.exit(0)
+
+	comm = MPI.COMM_WORLD
+	rank = comm.Get_rank()
+
+	print(rank)
+	
+	np.random.seed(rank)
+
+	filename = "run.h5"
+	backend = emcee.backends.HDFBackend(filename)
+	backend.reset(nwalkers, ndim)
+	
+
+
+	
+	ini_guess =  np.array([0.3,0.0,0.79])+1e-4 * np.random.randn(nwalkers, ndim)
+
+
+	
+
+	sampler = emcee.EnsembleSampler(nwalkers, ndim, log_post, pool=pool,backend = backend, args=(z,f,r,ci,cn,s,si))
+
+	start = time.time()
+
+	sampler.run_mcmc(ini_guess, n_steps, progress=True);
+
+	end = time.time()
+	
+	print(end - start)
+
+
+
+
+
 
 
 
