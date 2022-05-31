@@ -78,7 +78,7 @@ z,f,ci,r,s,si,cn = load_data()
 
 n_steps = int(sys.argv[1])
 nwalkers = int(sys.argv[2])
-print(n_steps,nwalkers,nrank)
+print(n_steps,nwalkers,rank)
 
 
 
