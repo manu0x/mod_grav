@@ -661,7 +661,7 @@ double * read_fs8_data(FILE *fp_data,int &n,int up_bnd = 100)
 
 int main(int argc,char *argv[])
 {
-	double sig8  = 0.79;
+	double sig8  = 0.5;
 	double a_l[12] = {0.02,0.08,0.15,0.19,0.23,0.35,0.45,0.55,0.65,0.78,0.89,0.999};
 	double z_l[12] = {0.02,0.08,0.15,0.19,0.23,0.35,0.45,0.55,0.65,0.78,0.89,0.999};
 	int n = 12,b;
