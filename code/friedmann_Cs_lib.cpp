@@ -298,7 +298,7 @@ int f_sigma_log_like_bimetric(double omega_dm0,double B1,double sig8,double *dat
 
 	}
 	
-
+	model_param = B1;
 	
 	cosmo_bigravity cosmo_model_bigravity(om_dm_0,model_param);
 
