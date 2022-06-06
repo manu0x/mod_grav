@@ -23,7 +23,7 @@ time_str = now_time.strftime("%d_%m_%Y_%H_%M_%S")
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 
-print(rank)
+#print(rank)
 	
 np.random.seed(rank)
 
@@ -78,19 +78,40 @@ z,f,ci,r,s,si,cn = load_data()
 
 n_steps = int(sys.argv[1])
 nwalkers = int(sys.argv[2])
-print(n_steps,nwalkers,rank)
+
+
+if(len(sys.argv)<=3):
+   lcdm_limit = 0
+else:
+    lcdm_limit = int(sys.argv[3])
+
+
+print("rank ",rank)
+print("    cmd args ",len(sys.argv))
+print("    n_steps ",n_steps)
+print("    walkers ",nwalkers)
 
 
 
-ndim = 3
-ini_guess =  np.array([0.3,0.0,0.79])+1e-4 * np.random.randn(nwalkers, ndim)
+
+if lcdm_limit==1:
+    ndim=2
+else:
+    ndim = 3
+
+if lcdm_limit==1:
+    ini_guess =  np.array([0.3,0.79])+1e-4 * np.random.randn(nwalkers, ndim)
+else:
+    ini_guess =  np.array([0.3,0.79,0.0])+1e-4 * np.random.randn(nwalkers, ndim)
+
+#print('ini_guess',ini_guess)
 
 
 filename = time_str+"_"+str(rank)+".h5"
 backend = emcee.backends.HDFBackend(filename)
 backend.reset(nwalkers, ndim)
 
-sampler = emcee.EnsembleSampler(nwalkers, ndim, log_post, backend = backend, args=(z,f,r,ci,cn,s,si))
+sampler = emcee.EnsembleSampler(nwalkers, ndim, log_post, backend = backend, args=(z,f,r,ci,cn,s,si,lcdm_limit))
 
 
 

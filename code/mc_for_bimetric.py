@@ -36,12 +36,16 @@ lib_h.restype = ctypes.c_int
 
 
 
-def log_likelihood(theta,z,data,rat_den,C_I,cn,s,si):
+def log_likelihood(theta,z,data,rat_den,C_I,cn,s,si,lcdm_limit=0):
    
   
     omega_dm_0 = theta[0]
-    B1 = theta[1]
-    s8 = theta[2]
+    s8 = theta[1]
+    if lcdm_limit==1:
+        B1 = 0.0
+    else:
+        B1 = theta[2]
+    
     n = z.shape[0]
     zz = ctypes.c_double*(n)
     ratio_den = ctypes.c_double*(n)
@@ -75,10 +79,15 @@ def log_likelihood(theta,z,data,rat_den,C_I,cn,s,si):
 
 
 
-def log_prior(theta):
+def log_prior(theta,lcdm_limit):
+
     omega_dm_0 = theta[0]
-    B1 = theta[1]
-    s8 = theta[2]
+    s8 = theta[1]
+    if lcdm_limit==1:
+        B1 = 0.0
+    else:
+        B1 = theta[2]
+    
 
     if 0.01<omega_dm_0<0.9 and 0.0<=B1<=6.0 and 0.01<s8<1.0:
         return 0.0
@@ -86,10 +95,10 @@ def log_prior(theta):
         return -np.inf
 
 
-def log_post(theta,z,data,rat_den,C_I,cn,s,si):
-    log_pr = log_prior(theta)
+def log_post(theta,z,data,rat_den,C_I,cn,s,si,lcdm_limit=0):
+    log_pr = log_prior(theta,lcdm_limit)
     if not(np.isfinite(log_pr)):
         return -np.inf
     else:
-        return log_pr + log_likelihood(theta,z,data,rat_den,C_I,cn,s,si)
+        return log_pr + log_likelihood(theta,z,data,rat_den,C_I,cn,s,si,lcdm_limit)
 
