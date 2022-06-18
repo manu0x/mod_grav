@@ -135,6 +135,33 @@ class cosmo_bigravity
 
 	}
 
+	double inv_Ea(double a,double a0=1.0)
+	{
+
+		double HbyH0_val,val;
+		HbyH0_val = HbyH0(a);
+		
+		val = 1.0/(a*a*HbyH0_val);
+
+		return val;
+
+
+	}
+
+
+	double inv_Ea_fid(double a,double a0=1.0)
+	{
+
+		double HbyH0_val,val;
+		HbyH0_val = sqrt(  omega_dm_0*pow(a0/a,3.0) + (1.0-omega_dm_0) );
+		
+		val = 1.0/(a*a*HbyH0_val);
+
+		return val;
+
+
+	}
+
 
 	double Hb_t_by_Hb2(double a,double a0=1.0)
 	{
@@ -274,11 +301,21 @@ int f_sigma_log_like_bimetric(double omega_dm0,double B1,double sig8,double *dat
 	double om_dm_0, model_param;
 	double D1_0;
 	double a_lst[n];
-	double H_H0[n];	
+	double corc[n];	
 	int a_lst_cntr=0;
 	double a_lst_now ;
 	
 	double log_like;
+
+
+///////////////////// Integration of E related /////////////////////////
+	double intg_1byE,intg_1byE_fid;
+	double cum_intg_1byE,cum_intg_1byE_fid;
+	double simp[3],simp_fid[3];
+	double num_corc,den_corc;
+
+
+/////////////////////////////////////////////////////////////////////////
 	
 
 	int i,j,cn_i;
@@ -332,11 +369,56 @@ int f_sigma_log_like_bimetric(double omega_dm0,double B1,double sig8,double *dat
 	int burn = 1, cntr;
 	a_lst_now = a_lst[0];
 
+	simp[2] = cosmo_model_bigravity.inv_Ea(ai_burn);
+	simp_fid[2] = cosmo_model_bigravity.inv_Ea_fid(ai_burn);
+
+	cum_intg_1byE = 0.0;
+	cum_intg_1byE_fid = 0.0;
+
+
+	for(a=ai_burn,cntr=0;a<=a0;a+=da,++cntr)
+	{
+		simp[0] = simp[2];
+		simp[1] = cosmo_model_bigravity.inv_Ea(a+0.5*da);
+		simp[2] = cosmo_model_bigravity.inv_Ea(a+da);
+
+		cum_intg_1byE+= ((da/6.0)*(simp[0]+4.0*simp[1]+simp[2]));
+
+		simp_fid[0] = simp_fid[2];
+		simp_fid[1] = cosmo_model_bigravity.inv_Ea_fid(a+0.5*da);
+		simp_fid[2] = cosmo_model_bigravity.inv_Ea_fid(a+da);
+
+		cum_intg_1byE_fid+= ((da/6.0)*(simp_fid[0]+4.0*simp_fid[1]+simp_fid[2]));
+
+	}
+
+	simp[2] = cosmo_model_bigravity.inv_Ea(ai_burn);
+	simp_fid[2] = cosmo_model_bigravity.inv_Ea_fid(ai_burn);
+
+	intg_1byE = 0.0;
+	intg_1byE_fid = 0.0;
+
 	//fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\n",a/ai,delta,delta_a,delta/delta_i,delta_a/delta_a_i);
 
 	for(a=ai_burn,cntr=0;a<=a0;a+=da,++cntr)
 	{
 		ak = a;
+		
+		simp[0] = simp[2];
+		simp[1] = cosmo_model_bigravity.inv_Ea(a+0.5*da);
+		simp[2] = cosmo_model_bigravity.inv_Ea(a+da);
+
+		intg_1byE+= ((da/6.0)*(simp[0]+4.0*simp[1]+simp[2]));
+
+		simp_fid[0] = simp_fid[2];
+		simp_fid[1] = cosmo_model_bigravity.inv_Ea_fid(a+0.5*da);
+		simp_fid[2] = cosmo_model_bigravity.inv_Ea_fid(a+da);
+
+		intg_1byE_fid+= ((da/6.0)*(simp_fid[0]+4.0*simp_fid[1]+simp_fid[2]));
+
+		num_corc = simp[2]*(cum_intg_1byE-intg_1byE);
+		den_corc = simp_fid[2]*(cum_intg_1byE_fid-intg_1byE_fid);
+  
 
 		if((a>=a_lst_now)&&(a_lst_cntr<n))
 		{
@@ -344,7 +426,7 @@ int f_sigma_log_like_bimetric(double omega_dm0,double B1,double sig8,double *dat
 			for(cn_i=0;cn_i<cn[a_lst_cntr];++cn_i)
 			{fs8[a_lst_cntr+cn_i] = sig8*a*D_a[0];
 
-			 H_H0[a_lst_cntr+cn_i] = cosmo_model_bigravity.HbyH0( a_lst[a_lst_cntr+cn_i]);
+			 corc[a_lst_cntr+cn_i] = num_corc/den_corc;
 			}
 			
 			//fprintf(fp_fs8,"%d\t%d\t%lf\n",a_lst_cntr,cn[a_lst_cntr],fs8[a_lst_cntr]);	
@@ -425,7 +507,7 @@ int f_sigma_log_like_bimetric(double omega_dm0,double B1,double sig8,double *dat
 	for(i=0,j=0;i<n;++i,++j)
 	{
 
-		fs8[i] = (fs8[i]/D1_0)*(H_H0[i]/ratio_den[i]);
+		fs8[i] = (fs8[i]/D1_0)*(corc[i]);
 	/*
 		if(ax)
 		{if(print_file)
