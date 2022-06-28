@@ -388,7 +388,7 @@ class cosmo_dgp
 
 
 
-int f_sigma_cal(int argc,char *argv[],double sig8,double *data,double *fs8,int n,int ax=1)
+int f_sigma_cal(int argc,char *argv[],double sig8,double *al,double *fs8,int n,int ax=1)
 {
 	double D[3],D_a[3],D_rk[5][3], D_a_rk[5][3], acc[3];
 	double D_i[3], D_a_i[3];
@@ -404,13 +404,13 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *data,double *fs8,int n
 
 	int i,j,theory;
 
-	for(i=0,j=0;i<n;++i,j+=2)
+	for(i=0,j=0;i<n;++i)
 	{
 		if(ax)
-		a_lst[i] = data[j];
+		a_lst[i] = al[i];
 		
 		else
-		a_lst[i] = 1.0/(1.0+data[j]);
+		a_lst[i] = 1.0/(1.0+al[n-i-1]);
 
 		
 
@@ -505,7 +505,7 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *data,double *fs8,int n
 		if((a>=a_lst_now)&&(a_lst_cntr<n))
 		{
 			fs8[a_lst_cntr] = sig8*a*D_a[0];
-			printf("\nyy %d %lf %lf %lf\n\n",a_lst_cntr,a_lst[a_lst_cntr],data[2*a_lst_cntr],a);
+			printf("\nyy %d %lf %lf\n\n",a_lst_cntr,a_lst[a_lst_cntr],a);
 
 			++a_lst_cntr;
 			a_lst_now = a_lst[a_lst_cntr];
@@ -600,9 +600,9 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *data,double *fs8,int n
 
 		fs8[i] = fs8[i]/D1_0;
 		if(ax)
-		fprintf(fp_fs8,"%lf\t%lf\t%lf\n",a_lst[i],fs8[i],data[j+1]);
+		fprintf(fp_fs8,"%lf\t%lf\n",a_lst[i],fs8[i]);
 		else
-		fprintf(fp_fs8,"%lf\t%lf\t%lf\n",data[j],fs8[i],data[j+1]);
+		fprintf(fp_fs8,"%lf\t%lf\n",al[n-i-1],fs8[i]);
 	}
 
 
@@ -663,8 +663,8 @@ int main(int argc,char *argv[])
 {
 	double sig8  = 0.79;
 	double a_l[12] = {0.02,0.08,0.15,0.19,0.23,0.35,0.45,0.55,0.65,0.78,0.89,0.999};
-	double z_l[12] = {0.02,0.08,0.15,0.19,0.23,0.35,0.45,0.55,0.65,0.78,0.89,0.999};
-	int n = 12,b;
+	double z_l[24] = {0.001,0.08,0.15,0.19,0.23,0.35,0.45,0.55,0.65,0.78,0.89,0.999,1.001,1.08,1.15,1.19,1.23,1.35,1.45,1.55,1.65,1.78,1.89,1.999};
+	int n = 24,b;
 	int ax = 0;
 	double *data;
 
@@ -684,7 +684,7 @@ int main(int argc,char *argv[])
 
 	
 
-	b = f_sigma_cal( argc,argv, sig8,data,fs8,n,ax);
+	b = f_sigma_cal( argc,argv, sig8,z_l,fs8,n,ax);
 
 }
 
