@@ -451,10 +451,10 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *al,double *fs8,int n,i
 		theory = 1;
 	}
 	else
-	if(!strcmp(argv[1],"bimetric"))
+	if(!strcmp(argv[1],"timetric"))
 	{	
 		fname = fname+us+argstr+us+"om"+us+om_str+us+"B1"+us+mod_str;
-		printf("bimetric\n");
+		printf("timetric\n");
 		
 		theory = 2;
 	}
@@ -480,7 +480,7 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *al,double *fs8,int n,i
 	D_a[0] = D_a_i[0];
 
 	D_i[1] = (34.0/7.0)*D_i[0]*D_i[0]/3.0;
-	D_a_i[1] = D_i[1]/ai;
+	D_a_i[1] = 2.0*(34.0/7.0)*D_i[0]*D_a_i[0]/3.0;//D_i[1]/ai;
 	
 	D[1] = D_i[1];
 	D_a[1] = D_a_i[1];
@@ -505,7 +505,7 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *al,double *fs8,int n,i
 		if((a>=a_lst_now)&&(a_lst_cntr<n))
 		{
 			fs8[a_lst_cntr] = sig8*a*D_a[0];
-			printf("\nyy %d %lf %lf\n\n",a_lst_cntr,a_lst[a_lst_cntr],a);
+			//printf("\nyy %d %lf %lf\n\n",a_lst_cntr,a_lst[a_lst_cntr],a);
 
 			++a_lst_cntr;
 			a_lst_now = a_lst[a_lst_cntr];
@@ -523,10 +523,10 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *al,double *fs8,int n,i
 			D_a_i[2] = D_a[2];
 
 			//D[1] = 4.858*D[0]*D[0]/3.0;
-			//D_a[1] = D_a[0];//1.0;
+			//D_a[1] = 4.858*2.0*D_a[0]*D[0]/3.0;
 		
-			D_i[1] = D[1];
-			D_a_i[1] = D_a[1];
+			//D_i[1] = D[1];
+			//D_a_i[1] = D_a[1];
 		
 			printf("intial dc is %lf  %lf  %lf\n",D_i[0],D_i[1],D_i[2]);
 
@@ -544,7 +544,8 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *al,double *fs8,int n,i
 		D_rk[0][2] = D[2];
 		D_a_rk[0][2] = D_a[2]; 
 		
-		if(!(burn)&&((cntr%100)==0))
+		//if(!(burn)&&((cntr%100)==0))
+		if(((cntr%1000)==0))
 		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
 			a,D[0],D[1],D[2],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[2]/D_i[2],
 			3.0*D[1]/(D[0]*D[0]),3.0*D[2]/(D[0]*D[0]));
@@ -674,7 +675,7 @@ int main(int argc,char *argv[])
 	data = read_fs8_data(fpdata,n);
 	double fs8[n];
 	printf("n is %d\n",n);
-	for(int i=0;i<(2*n-1);i+=2)
+	/*for(int i=0;i<(2*n-1);i+=2)
 	{
 		
 		printf("%d %lf %lf\n",i,data[i],data[i+1]);
@@ -682,7 +683,7 @@ int main(int argc,char *argv[])
 
 	}
 
-	
+	*/
 
 	b = f_sigma_cal( argc,argv, sig8,z_l,fs8,n,ax);
 
