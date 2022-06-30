@@ -451,10 +451,10 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *al,double *fs8,int n,i
 		theory = 1;
 	}
 	else
-	if(!strcmp(argv[1],"timetric"))
+	if(!strcmp(argv[1],"bimetric"))
 	{	
 		fname = fname+us+argstr+us+"om"+us+om_str+us+"B1"+us+mod_str;
-		printf("timetric\n");
+		printf("bimetric\n");
 		
 		theory = 2;
 	}
