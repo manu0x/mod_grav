@@ -544,8 +544,9 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *al,double *fs8,int n,i
 		D_rk[0][2] = D[2];
 		D_a_rk[0][2] = D_a[2]; 
 		
-		//if(!(burn)&&((cntr%100)==0))
-		if(((cntr%1000)==0))
+		//
+		//if(((cntr%1000)==0))
+		if(!(burn)&&((cntr%1000)==0))
 		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
 			a,D[0],D[1],D[2],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[2]/D_i[2],
 			3.0*D[1]/(D[0]*D[0]),3.0*D[2]/(D[0]*D[0]));
