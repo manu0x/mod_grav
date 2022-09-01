@@ -863,7 +863,7 @@ int main(int argc,char *argv[])
 	for(i=0;i<b1len;++i)
 	{
 		printf("om_grid i %d\n",i);
-		for(om0in = 0.01,j=0;om0in<=1.0;om0in+=0.1,++j)
+		for(om0in = 0.01,j=0;om0in<=1.0;om0in+=0.05,++j)
 		{
 			s30 = S_z0_cal_bimetric(b1list[i],om0in);
 			fprintf(fp_omgrid,"%lf\t%lf\t%lf\n",om0in,b1list[i],s30);
@@ -880,7 +880,7 @@ int main(int argc,char *argv[])
 	for(i=0;i<omlen;++i)
 	{
 		printf("B1_grid i %d\n",i);
-		for(b1in = 0.0,j=0;b1in<=3.0;b1in+=0.3,++j)
+		for(b1in = 0.0,j=0;b1in<=3.0;b1in+=0.15,++j)
 		{
 			s30 = S_z0_cal_bimetric(b1in,om0list[i]);
 			fprintf(fp_b1grid,"%lf\t%lf\t%lf\n",om0list[i],b1in,s30);
