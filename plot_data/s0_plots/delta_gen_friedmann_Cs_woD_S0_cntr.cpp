@@ -668,7 +668,7 @@ double S_z0_cal_bimetric(double B1_in,double omega_dm0_in)
 	
 
 
-	da = 0.000001;
+	da = 0.00001;
 	ai = 0.001;
 	ai_burn = ai*0.01;
 	a0 = 1.0;
@@ -858,45 +858,38 @@ int main(int argc,char *argv[])
 	FILE *fp_b1grid = fopen("s3_z0_bgrid.txt","w");
 	FILE *fp_omgrid = fopen("s3_z0_omgridxx.txt","w");
 
+	FILE *fpomv = fopen("omv.txt","w");
+	FILE *fpb1v = fopen("b1v.txt","w");
+	FILE *fps30v = fopen("s30v.txt","w");
+
 	
 	
 
 
 
-	for(i=0;i>b1len;++i)
+
+	
+	for(om0in = 0.0001,j=0;om0in<=1.0;om0in+=0.005,++j)
 	{
-		printf("om_grid i %d\n",i);
-		//s30 = S_z0_cal_bimetric(b1list[i],0.0);
-		//fprintf(fp_omgrid,"%.16lf\t%.16lf\t%.16lf\n",0.0,b1list[i],s30);
-		for(om0in = 0.0001,j=0;om0in<=1.0;om0in+=0.005,++j)
+		printf(" j %d om %lf\n",i,om0in);
+		for(b1in = 0.0,i=0;b1in<=3.0;b1in+=0.015,++i)
 		{
-			s30 = S_z0_cal_bimetric(b1list[i],om0in);
-			fprintf(fp_omgrid,"%.16lf\t%.16lf\t%.16lf\n",om0in,b1list[i],s30);
+			s30 = S_z0_cal_bimetric(b1in,om0in);
+			fprintf(fpomv,"%.16lf\t",om0in);
+			fprintf(fpb1v,"%.16lf\t",b1in);
+			fprintf(fps30v,"%.16lf\t",s30);
 			
 
 		}
 	
-	
+		fprintf(fpomv,"\n");
+		fprintf(fpb1v,"\n");
+		fprintf(fps30v,"\n");
 	}
-	printf("\nom_grid points are %d\n\n",j);
-
-	fclose(fp_omgrid);
 	
-	for(i=0;i<omlen;++i)
-	{
-		printf("B1_grid i %d\n",i);
-		for(b1in = 0.0,j=0;b1in<=3.0;b1in+=0.015,++j)
-		{
-			s30 = S_z0_cal_bimetric(b1in,om0list[i]);
-			fprintf(fp_b1grid,"%lf\t%lf\t%lf\n",om0list[i],b1in,s30);
-			
-
-		}
-	
-	
-	}
-	printf("\nB1_grid points are %d\n\n",j);
-	fclose(fp_b1grid);
+	fclose(fpomv);
+	fclose(fpb1v);
+	fclose(fps30v);
 
 
 }

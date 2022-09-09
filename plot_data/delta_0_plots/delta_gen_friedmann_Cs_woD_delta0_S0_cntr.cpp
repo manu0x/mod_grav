@@ -619,7 +619,7 @@ int f_sigma_cal(int argc,char *argv[],double sig8,double *al,double *fs8,int n,i
 
 
 
-double S_z0_cal_bimetric(double B1_in,double omega_dm0_in)
+double delta_S3_z0_cal_bimetric(double B1_in,double omega_dm0_in,double delret[2])
 {
 	double D[3],D_a[3],D_rk[5][3], D_a_rk[5][3], acc[3];
 	double D_i[3], D_a_i[3];
@@ -668,7 +668,7 @@ double S_z0_cal_bimetric(double B1_in,double omega_dm0_in)
 	
 
 
-	da = 0.000001;
+	da = 0.00001;
 	ai = 0.001;
 	ai_burn = ai*0.01;
 	a0 = 1.0;
@@ -781,7 +781,8 @@ double S_z0_cal_bimetric(double B1_in,double omega_dm0_in)
 	D1_0 = D[0];
 
 	
-
+	delret[0] =   D[0]/D_i[0];
+	delret[1] =   D[1]/D_i[1];
 
 	
 	
@@ -852,51 +853,58 @@ int main(int argc,char *argv[])
 	int i,j;
 
 	double om0in,b1in,s30;
-
-
+	double delret[2];
 
 	FILE *fp_b1grid = fopen("s3_z0_bgrid.txt","w");
 	FILE *fp_omgrid = fopen("s3_z0_omgridxx.txt","w");
 
+	FILE *fpomv = fopen("omv.txt","w");
+	FILE *fpb1v = fopen("b1v.txt","w");
+	FILE *fps30v = fopen("s30v.txt","w");
+	FILE *fpd10v = fopen("d10v.txt","w");
+	FILE *fpd20v = fopen("d20v.txt","w");
+
 	
 	
 
 
 
-	for(i=0;i>b1len;++i)
+	
+	
+	for(om0in = 0.0001,j=0;om0in<=1.0;om0in+=0.005,++j)
 	{
-		printf("om_grid i %d\n",i);
-		//s30 = S_z0_cal_bimetric(b1list[i],0.0);
-		//fprintf(fp_omgrid,"%.16lf\t%.16lf\t%.16lf\n",0.0,b1list[i],s30);
-		for(om0in = 0.0001,j=0;om0in<=1.0;om0in+=0.005,++j)
+		printf(" j %d om %lf\n",i,om0in);
+		for(b1in = 0.0,i=0;b1in<=3.0;b1in+=0.015,++i)
 		{
-			s30 = S_z0_cal_bimetric(b1list[i],om0in);
-			fprintf(fp_omgrid,"%.16lf\t%.16lf\t%.16lf\n",om0in,b1list[i],s30);
+			s30 = delta_S3_z0_cal_bimetric(b1in,om0in,delret);
+			fprintf(fpomv,"%.16lf\t",om0in);
+			fprintf(fpb1v,"%.16lf\t",b1in);
+			fprintf(fps30v,"%.16lf\t",s30);
+			fprintf(fpd10v,"%.16lf\t",delret[0]);
+			fprintf(fpd20v,"%.16lf\t",delret[1]);
 			
 
 		}
 	
-	
+		fprintf(fpomv,"\n");
+		fprintf(fpb1v,"\n");
+		fprintf(fps30v,"\n");
+		fprintf(fpd10v,"\n");
+		fprintf(fpd20v,"\n");
 	}
-	printf("\nom_grid points are %d\n\n",j);
+	
+	fclose(fpomv);
+	fclose(fpb1v);
+	fclose(fps30v);
+	fclose(fpd10v);
+	fclose(fpd20v);
 
-	fclose(fp_omgrid);
-	
-	for(i=0;i<omlen;++i)
-	{
-		printf("B1_grid i %d\n",i);
-		for(b1in = 0.0,j=0;b1in<=3.0;b1in+=0.015,++j)
-		{
-			s30 = S_z0_cal_bimetric(b1in,om0list[i]);
-			fprintf(fp_b1grid,"%lf\t%lf\t%lf\n",om0list[i],b1in,s30);
-			
 
-		}
-	
-	
-	}
-	printf("\nB1_grid points are %d\n\n",j);
-	fclose(fp_b1grid);
+	s30 = delta_S3_z0_cal_bimetric(0.0,0.3,delret);
+	printf("\nLCDM values (omega=0.3,B1=0.0):\n");
+	printf("delta1/delta1_ini is %.14lf\n",delret[0]);
+	printf("delta2/delta2_ini is %.14lf\n",delret[1]);
+	printf("S_3 is %.14lf\n",s30);
 
 
 }
