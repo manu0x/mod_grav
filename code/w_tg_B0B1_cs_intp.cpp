@@ -416,8 +416,27 @@ class cosmo_bigravity
 
 
 
+double prim_R(double k)
+{
+	double pr;
+	double As,kp,ns;
+	As = 1e-4;
+	kp=1.0;
+	ns=1.0;
+
+	pr = (2.0*M_PI*M_PI/(k*k*k))*As*pow(k/kp,ns-1.0);
+
+	return(pr);
 
 
+
+}
+
+double TF(double k)
+{
+
+	return(1.0);
+}
 
 
 
@@ -426,10 +445,14 @@ double wg(double z)
 	return(1.0);
 }
 
-double Pk(double k)
+double Pk(double k,double om_0=0.3,double D1=1.0)
 {
+	double prv,tfv,pv;
+	prv = prim_R(k);
+	tfv = TF(k);
+	pv = (4.0/25.0)*(k*k/om_0)*pr*tfv*tfv*D1*D1;
 
-	return (1.0/k);
+	return (pv);
 
 }
 
