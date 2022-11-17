@@ -7,9 +7,11 @@ using namespace std;
 #include <gsl/gsl_sf_bessel.h>
 
 #include "./other_source/spline.c"
+#include "./other_source/power.c"
 
 #define c_box 2.99
 #define twopie 2.0*M_PI
+#define H0byc (0.001/2.99)
 
 
 
@@ -23,8 +25,10 @@ class cosmo_bigravity
 
 	public:
 	double omega_dm_0, H0,B1;
+	double D1_0; 
 	double  B0;
 	double dai;
+	
 
 	double *cs_D1,*cs_f,*cs_cmd,*a_sp,*D1_sp,*f_sp,*cmd_sp;
 	cosmo_bigravity(double omega_dm_0_val=0.3,double B1param=0.0,double h_val=0.7,int model=2)
@@ -36,6 +40,11 @@ class cosmo_bigravity
 		B0 = 3.0*(1.0-omega_dm_0-B1*B1/3.0);
 		ratio = (1.0-omega_dm_0)/(omega_dm_0);
 		printf("H0 %lf  B1  %lf\n",H0,B1);
+
+		
+
+		TFmdm_set_cosm(omega_dm_0, 0.0223/(h_val*h_val), 0.0,
+		1, (1.0-omega_dm_0), h_val, 1000.0);
 
 	}
 
@@ -170,7 +179,8 @@ class cosmo_bigravity
 				+ 18.0*theta*omega_dm_0 - 6.0*B1*B1*theta*omega_dm_0 + 9.0*omega_dm_0*omega_dm_0
 				- 18.0*theta*omega_dm_0*omega_dm_0 + 9.0*theta*theta*omega_dm_0*omega_dm_0;
 		lambda2 = pow(lambda2,2.5);
-		lambda2 = lambda2*(3.0 - B1*B1 - 3.0*omega_dm_0 + 3.0*omega_dm_0*theta + 6.0*sqrt(B1*B1/3.0 + (B0/6.0 + 0.5*omega_dm_0*theta)*(B0/6.0 + 0.5*omega_dm_0*theta) ));
+		lambda2 = lambda2*(3.0 - B1*B1 - 3.0*omega_dm_0 + 3.0*omega_dm_0*theta + 6.0*sqrt(B1*B1/3.0 +
+						 (B0/6.0 + 0.5*omega_dm_0*theta)*(B0/6.0 + 0.5*omega_dm_0*theta) ));
 	
 		c2 = kappa2/lambda2;
 
@@ -357,7 +367,7 @@ class cosmo_bigravity
 
 	   }
 
-
+	D1_0  = D[0];
 
 	cs_D1 = new double[3*aN];
 	cs_f = new double[3*aN];
@@ -395,7 +405,7 @@ class cosmo_bigravity
 	}
 
 	if((!chk1)&&(!chk2)&&(!chk3))
-	printf("Spline no err\n");
+	printf("Spline no err and D1_0 is %lf\n",D1_0);
 	else
 	printf("Errrr in spline %d %d %d");
 
@@ -416,13 +426,13 @@ class cosmo_bigravity
 
 
 
-double prim_R(double k)
+double prim_R(double k,double h=0.67)
 {
 	double pr;
 	double As,kp,ns;
-	As = 1e-4;
-	kp=1.0;
-	ns=1.0;
+	As = 2.101e-9;
+	kp= 0.05/h;
+	ns=0.9649;
 
 	pr = (2.0*M_PI*M_PI/(k*k*k))*As*pow(k/kp,ns-1.0);
 
@@ -435,7 +445,9 @@ double prim_R(double k)
 double TF(double k)
 {
 
-	return(1.0);
+	double tfv;
+	tfv = TFmdm_onek_hmpc(k);
+	return(tfv);
 }
 
 
@@ -450,7 +462,7 @@ double Pk(double k,double om_0=0.3,double D1=1.0)
 	double prv,tfv,pv;
 	prv = prim_R(k);
 	tfv = TF(k);
-	pv = (4.0/25.0)*(k*k/om_0)*pr*tfv*tfv*D1*D1;
+	pv = (4.0/25.0)*(k*k/om_0)*(k*k/om_0)*prv*tfv*tfv*D1*D1/pow(H0byc,4.0);
 
 	return (pv);
 
@@ -459,6 +471,23 @@ double Pk(double k,double om_0=0.3,double D1=1.0)
 
 
 
+void test_pk()
+{
+	double pkv,primkv,tfkv,k,lk;
+	FILE *fptest= fopen("testpk2.txt","w");
+	for(lk=-5.0;lk<=2.0;lk+=0.01)
+	{
+		k=pow(10.0,lk);
+		pkv = Pk(k);
+		primkv = prim_R(k);
+		tfkv = TF(k);
+		fprintf(fptest,"%lf\t%lf\t%lf\t%lf\n",k,pkv,primkv,tfkv);
+
+
+	}
+
+
+}
 
 double int_z(int argc,char *argv[],double theta,double k,cosmo_bigravity bimet,double da =  0.00001)
 {
@@ -501,7 +530,7 @@ double int_z(int argc,char *argv[],double theta,double k,cosmo_bigravity bimet,d
 		j0 = gsl_sf_bessel_J0(ktc);
 		wgv = wg(a0/a-1.0);
 
-		cur_int = sqrt(gv[0])*D1*D1*( (1.0-fv)*(gv[1] + 1.5*x*gv[2]) + 1.5*x*(5.0*gv[2] + 3.0*x*gv[3]) )*wgv*j0;
+		cur_int = sqrt(gv[0])*(D1/as[j])*(D1/as[j])*( (1.0-fv)*(gv[1] + 1.5*x*gv[2]) + 1.5*x*(5.0*gv[2] + 3.0*x*gv[3]) )*wgv*j0;
 
 		in_z+=(da/6.0)*smp[j]*cur_int;
 			
@@ -527,23 +556,24 @@ double int_z(int argc,char *argv[],double theta,double k,cosmo_bigravity bimet,d
 
 
 
-
-double int_k(int argc,char *argv[],double theta,cosmo_bigravity bimet,double kini=1.0,double kend=2.0,double dk=0.01)
+double int_k(int argc,char *argv[],double theta,cosmo_bigravity bimet,double kini=0.0001,double kend=1.0,double dk=0.01)
 {
 
 	double in_k,in_k1,in_k2,in_k3;
 	double pk1,pk2,pk3;
 	double k;
 	in_k = 0.0;
+
+	double D1_0 = bimet.D1_0;
 	
 	printf("\n\nTHETA %lf\n",theta);
 	
 	for(k=kini;k<=kend;k+=dk)
 	{  
 
-	   pk1 = Pk(k);
-	   pk2 = Pk(k+0.5*dk);
-	   pk3 = Pk(k+dk);
+	   pk1 = Pk(k,D1_0);
+	   pk2 = Pk(k+0.5*dk,D1_0);
+	   pk3 = Pk(k+dk,D1_0);
 
 	   in_k1 = int_z(argc,argv,theta,k,bimet);//printf("theta %lf  k_frac %lf  %lf\n",theta,k,in_k1);
 	   in_k1 = pk1*in_k1/k;
@@ -557,6 +587,50 @@ double int_k(int argc,char *argv[],double theta,cosmo_bigravity bimet,double kin
 	   in_k3 = pk3*in_k3/(k+dk);
 
 	   in_k+= (dk/6.0)*(in_k1+4.0*in_k2+in_k3);
+
+
+	}
+	
+	return(in_k);
+
+
+}
+
+
+double int_logk(int argc,char *argv[],double theta,cosmo_bigravity bimet,double lkini=-12.0,double lkend=1.0,double dlk=0.1)
+{
+
+	double in_k,in_k1,in_k2,in_k3;
+	double pk1,pk2,pk3;
+	double k,lk,k1,k2,k3;
+	in_k = 0.0;
+
+	double D1_0 = bimet.D1_0;
+	
+	printf("\n\nTHETA %lf\n",theta);
+	
+	for(lk=lkini;lk<=lkend;lk+=dlk)
+	{  
+	
+	   k1 = exp(lk);
+	   k2 = exp(lk+0.5*dlk);
+	   k3 = exp(lk+dlk);
+	   pk1 = Pk(k1,D1_0);
+	   pk2 = Pk(k2,D1_0);
+	   pk3 = Pk(k3,D1_0);
+
+	   in_k1 = int_z(argc,argv,theta,k1,bimet);//printf("theta %lf  k_frac %lf  %lf\n",theta,k,in_k1);
+	   in_k1 = pk1*in_k1;
+
+	   
+	
+	   in_k2 = int_z(argc,argv,theta,k2,bimet);
+	   in_k2 = pk2*in_k2;
+
+	   in_k3 = int_z(argc,argv,theta,k3,bimet);
+	   in_k3 = pk3*in_k3;
+
+	   in_k+= (dlk/6.0)*(in_k1+4.0*in_k2+in_k3);
 
 
 	}
@@ -636,7 +710,7 @@ int main(int argc,char *argv[])
 
 	
 	thetai = 0.01;
-	thetaend = 10.0;
+	thetaend = 1.0;
 	dtheta = 0.1;
 
 	string fname = "wgtxt";
@@ -654,7 +728,7 @@ int main(int argc,char *argv[])
 	T0 = 2.14;
 	bias = 5.47;
 
-	multi_fac = 3.0*T0*twopie*twopie*bias*om_dm_0;
+	multi_fac = 3.0*T0*twopie*twopie*bias*om_dm_0*H0byc*H0byc*H0byc;
 	
 
 	
@@ -675,7 +749,7 @@ int main(int argc,char *argv[])
 	printf("%s\n",fname.c_str());
 
 	FILE *fppass = fopen(fname.c_str(),"w");
-	FILE *fp = fopen("wgt_lcdm.txt","w");
+	FILE *fp = fopen("wgt_model.txt","w");
 
 	cosmo_model_bigravity.run_cosmo(fppass);
 
@@ -685,18 +759,24 @@ int main(int argc,char *argv[])
 	{
 		
 		
-		wgt = int_k(argc,argv,theta,cosmo_model_bigravity);
+		wgt = int_logk(argc,argv,theta,cosmo_model_bigravity);
 		
-		fprintf(fp,"%lf\t%lf\n",theta,wgt);
-		printf("%lf\t%lf\n",theta,wgt);
+		fprintf(fp,"%lf\t%.10lf\n",theta,multi_fac*wgt);
+		printf("%lf\t%lf\n",theta,multi_fac*wgt);
 		
 
 	}
+	
+
 	
 	
 
 	fclose(fppass);
 	fclose(fp);
+
+
+ test_pk();
+
 }
 
 
