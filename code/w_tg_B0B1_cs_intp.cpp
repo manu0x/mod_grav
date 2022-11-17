@@ -710,10 +710,11 @@ int main(int argc,char *argv[])
 
 	
 	thetai = 0.01;
-	thetaend = 1.0;
+	thetaend = 10.0;
 	dtheta = 0.1;
 
-	string fname = "wgtxt";
+	string fname = "delta";
+	string fname2 = "wgt";
 	string argstr = argv[1];
 	string om_str = argv[2];
 	string mod_str = argv[3];
@@ -741,15 +742,18 @@ int main(int argc,char *argv[])
 	
 
 	fname = fname+us+argstr+us+"om"+us+om_str+us+"B1"+us+mod_str;
+	fname2 = fname2+us+argstr+us+"om"+us+om_str+us+"B1"+us+mod_str;
 	printf("bimetric\n");
 		
 
 	fname = fname+extstr;
+	fname2 = fname2+extstr;
 
 	printf("%s\n",fname.c_str());
+	printf("%s\n",fname2.c_str());
 
 	FILE *fppass = fopen(fname.c_str(),"w");
-	FILE *fp = fopen("wgt_model.txt","w");
+	FILE *fp = fopen(fname2.c_str(),"w");
 
 	cosmo_model_bigravity.run_cosmo(fppass);
 
