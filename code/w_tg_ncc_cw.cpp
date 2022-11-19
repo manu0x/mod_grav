@@ -17,30 +17,38 @@ using namespace std;
 
 
 
-class cosmo_bigravity
+
+
+
+
+
+
+class cosmo_negcc_cw
 {
 
 	private:
-	double  ratio,b,beta,gamma;
+	double  ratio_dem,ratio_deL,b,beta,w;
 	int model;
 
 	public:
-	double omega_dm_0, H0,B1;
+	double omega_dm_0, H0,omega_L_0,omega_de_0;
 	double D1_0; 
-	double  B0;
+	
 	double dai;
 	
 
 	double *cs_D1,*cs_f,*cs_cmd,*a_sp,*D1_sp,*f_sp,*cmd_sp;
-	cosmo_bigravity(double omega_dm_0_val=0.3,double B1param=0.0,double h_val=0.7,int model=2)
+	cosmo_negcc_cw(double omega_dm_0_val=0.3,double olparam=0.0,double wparam=-1.0,double h_val=0.7,int model=2)
 	{
 		omega_dm_0 = omega_dm_0_val;
 		H0 = (h_val/c_box)*0.001;
 		model = model;
-		B1 = B1param;
-		B0 = 3.0*(1.0-omega_dm_0-B1*B1/3.0);
-		ratio = (1.0-omega_dm_0)/(omega_dm_0);
-		printf("H0 %lf  B1  %lf\n",H0,B1);
+		w = wparam;
+		omega_L_0 = olparam;
+		omega_de_0 = (1.0-omega_dm_0-omega_L_0);
+		ratio_dem = omega_de_0/(omega_dm_0);
+		ratio_deL = omega_L_0/(omega_dm_0);
+		printf("omL %lf  w  %lf  ratio_dem %lf \n",omega_L_0,w,ratio_dem );
 
 		
 
@@ -51,9 +59,10 @@ class cosmo_bigravity
 
 	double Hsqr(double a,double a0=1.0)
 	{
-		double val,omega;
-		omega = omega_dm_0*pow(a0/a,3.0);
-		val = H0*H0*(   0.5*omega + B0/6.0  + sqrt((0.5*omega + B0/6.0)*(0.5*omega + B0/6.0) + B1*B1/3.0 ) );
+		double val,omega_dm,omega_de;
+		omega_dm = omega_dm_0*pow(a0/a,3.0);
+		omega_de = omega_de_0*pow(a0/a,3.0*(1.0+w));
+		val = H0*H0*( omega_dm + omega_de + omega_L_0);
 		return(val);
 
 
@@ -62,27 +71,27 @@ class cosmo_bigravity
 
 	void g(double x,double dr[4])
 	{
- 	   double b0t,b1t;
- 	   b0t = B0/6.0 + 0.5*x;
-    	   b1t = B1*B1/3.0;
-    	   dr[0] =  b0t + sqrt(b0t*b0t + b1t);
-    	   dr[1] = 0.5 + 0.5*b0t/sqrt(b1t + b0t*b0t);
-    	   dr[2] = -0.25*b0t*b0t/pow(b1t + b0t*b0t,1.5) + 0.25/sqrt(b1t + b0t*b0t);
-    	    dr[3] = (3.0*b0t*b0t*b0t/pow(b1t + b0t*b0t,2.5) -3.0*b0t/pow(b1t + b0t*b0t,1.5))/8.0;	
+ 	   
+ 	   
+    	   dr[0] = x + ratio_dem*pow(x,1.0+w) + omega_L_0  ;
+    	   dr[1] = 1.0 + (1.0+w)*ratio_dem*pow(x,w);
+    	   dr[2] = (1.0+w)*w*ratio_dem*pow(x,w-1.0);
+    	   dr[3] = (1.0+w)*w*(w-1.0)*ratio_dem*pow(x,w-2.0);
 
 
 
 	}
 
 
+
+
+
 	double Hb_t_by_Hb2(double a,double a0=1.0)
 	{
 
-		double val,omega_dm;
-		omega_dm = omega_dm_0*pow(a0/a,3.0);		
-		beta = 0.5*omega_dm + B0/6.0;
+		double val;
 		
-		val = -(3.0/4.0)*omega_dm/sqrt(beta*beta + B1*B1/3.0);
+		val = -1.5*(1.0+ratio_dem*pow(a,-3.0*w)*(1.0+w))/( 1.0 + ratio_dem*pow(a,-3.0*w) + ratio_deL*pow(a,3.0) );
 		return(val);
 
 
@@ -91,17 +100,9 @@ class cosmo_bigravity
 
 	double H_Diff(double a, double delta, double a0=1.0)
 	{
-		double diff, term1,term2,omega_dm;
-	
-		omega_dm = omega_dm_0*pow(a0/a,3.0);		
-		beta = 0.5*omega_dm + B0/6.0;
-		b = 0.5*omega_dm*(1.0+delta) + B0/6.0;
-		gamma = (b+ sqrt(b*b + B1*B1/3.0))/(beta+ sqrt(beta*beta + B1*B1/3.0));
-		term1 = 1.0/sqrt(beta*beta + B1*B1/3.0);
-		term2 = (1.0+delta)*gamma/sqrt(b*b + B1*B1/3.0);
-		diff = (gamma-1.0) + (3.0/4.0)*omega_dm*(term1-term2) ;
-
-		//printf("diff %lf  bigr  %lf\n",diff,1.0+delta/(1.0+ratio*pow(a/a0,3.0)));
+		double diff;
+		diff = -0.5*delta/( 1.0 + ratio_dem*pow(a,-3.0*w) + ratio_deL*pow(a,3.0)  ) ;
+		//printf("lcdm diff %lf\n",diff);
 		return(diff);
 		
 
@@ -109,94 +110,40 @@ class cosmo_bigravity
 
 	double delta_aa(double a, double delta, double delta_a)
 	{
-		double HbtbyHb2, diff, acc;
+		double HbtbyHb2, diff, acc,Hsqr_val,ddelta_dtau_sqr_by_adotsqr;
 
 		HbtbyHb2 = Hb_t_by_Hb2(a);
 		diff = H_Diff(a, delta);
-		
-		
+		Hsqr_val = Hsqr(a);
+		//ddelta_dtau_sqr_by_adotsqr = a*a*delta_a*delta_a;
+
 		acc = -(1.0/a)*(3.0 + HbtbyHb2)*delta_a + (4.0/3.0)*delta_a*delta_a/(1.0+delta) - 3.0*(1.0+delta)*diff/(a*a);
-		
 	
 		return(acc);
 
 	}
-
-
-	double lin_delta_aa(double a, double delta, double delta_a,double a0=1.0)
-	{
-		double HbtbyHb2, diff, acc, theta,kappa,lambda;
-
-		HbtbyHb2 = Hb_t_by_Hb2(a);
-		diff = H_Diff(a, delta);
-		
-		theta = pow(a0/a,3.0);
-		kappa = -3.0*( 9.0*omega_dm_0*theta + 6.0*B1*B1*omega_dm_0*theta + pow(B1,4.0)*theta*omega_dm_0 
-				-18.0*theta*omega_dm_0*omega_dm_0 + 6.0*B1*B1*theta*omega_dm_0*omega_dm_0 - 9.0*theta*theta*omega_dm_0*omega_dm_0 
-				+ 3.0*B1*B1*theta*theta*omega_dm_0*omega_dm_0 + 9.0*theta*omega_dm_0*omega_dm_0*omega_dm_0
-				+ 9.0*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0 - 18.0*omega_dm_0*omega_dm_0*omega_dm_0*theta*theta*theta
-				+ 54.0*theta*theta*omega_dm_0*omega_dm_0*sqrt(B1*B1/3.0 + (B0/6.0 + 0.5*omega_dm_0*theta)*(B0/6.0 + 0.5*omega_dm_0*theta)));
-		lambda = (9.0 + 6.0*B1*B1 + B1*B1*B1*B1 -18.0*omega_dm_0 + 6.0*B1*B1*omega_dm_0 + 18.0*theta*omega_dm_0 
-				-6.0*B1*B1*theta*omega_dm_0 + 9.0*omega_dm_0*omega_dm_0 - 18.0*theta*omega_dm_0*omega_dm_0
-				+ 9.0*theta*theta*omega_dm_0*omega_dm_0);
-		lambda = 2.0*pow(lambda,1.5);
-		
-		diff = kappa*delta/lambda;
-		acc = -(1.0/a)*(3.0 + HbtbyHb2)*delta_a  - 3.0*diff/(a*a);
-	
-		return(acc);
-
-	}
-
 
 	void pert_delta_aa(double *acc, double D[3], double D_a[3],double a,double a0=1.0)
 	{
-		double HbtbyHb2, diff, theta,kappa1,lambda1,kappa2,lambda2;	
+		double HbtbyHb2;	
 		double c1,c2;
 
 		HbtbyHb2 = Hb_t_by_Hb2(a);
 		
 		
-		theta = pow(a0/a,3.0);
-		kappa1 = -3.0*( 9.0*omega_dm_0*theta + 6.0*B1*B1*omega_dm_0*theta + pow(B1,4.0)*theta*omega_dm_0 
-				-18.0*theta*omega_dm_0*omega_dm_0 + 6.0*B1*B1*theta*omega_dm_0*omega_dm_0 - 9.0*theta*theta*omega_dm_0*omega_dm_0 
-				+ 3.0*B1*B1*theta*theta*omega_dm_0*omega_dm_0 + 9.0*theta*omega_dm_0*omega_dm_0*omega_dm_0
-				+ 9.0*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0 - 18.0*omega_dm_0*omega_dm_0*omega_dm_0*theta*theta*theta
-				+ 54.0*theta*theta*omega_dm_0*omega_dm_0*sqrt(B1*B1/3.0 + (B0/6.0 + 0.5*omega_dm_0*theta)*(B0/6.0 + 0.5*omega_dm_0*theta)));
-		lambda1 = (9.0 + 6.0*B1*B1 + B1*B1*B1*B1 -18.0*omega_dm_0 + 6.0*B1*B1*omega_dm_0 + 18.0*theta*omega_dm_0 
-				-6.0*B1*B1*theta*omega_dm_0 + 9.0*omega_dm_0*omega_dm_0 - 18.0*theta*omega_dm_0*omega_dm_0
-				+ 9.0*theta*theta*omega_dm_0*omega_dm_0);
-		lambda1 = 2.0*pow(lambda1,1.5);
-		
-		c1 = kappa1/lambda1;
+		c1 = -0.5/( 1.0 + ratio_dem*pow(a,-3.0*w) + ratio_deL*pow(a,3.0)  );
+		c2 = 0.0;
 
-		kappa2 = 27.0*( -36.0*B1*B1*theta*theta*omega_dm_0*omega_dm_0 -24.0*B1*B1*B1*B1*theta*theta*omega_dm_0*omega_dm_0 
-				-4.0*pow(B1,6.0)*theta*theta*omega_dm_0*omega_dm_0 + 72.0*B1*B1*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0
-				-24.0*pow(B1,4.0)*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0 + 9.0*B1*B1*theta*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0
-				- 3.0*pow(B1,4.0)*theta*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0
-				-36.0*B1*B1*theta*theta*omega_dm_0*omega_dm_0*omega_dm_0*omega_dm_0 - 9.0*B1*B1*theta*theta*theta*pow(omega_dm_0,4.0)
-				+ 45.0*B1*B1*pow(theta,4.0)*pow(omega_dm_0,4.0));
-		lambda2 = 9.0+6.0*B1*B1+pow(B1,4.0) - 18.0*omega_dm_0 + 6.0*B1*B1*omega_dm_0 
-				+ 18.0*theta*omega_dm_0 - 6.0*B1*B1*theta*omega_dm_0 + 9.0*omega_dm_0*omega_dm_0
-				- 18.0*theta*omega_dm_0*omega_dm_0 + 9.0*theta*theta*omega_dm_0*omega_dm_0;
-		lambda2 = pow(lambda2,2.5);
-		lambda2 = lambda2*(3.0 - B1*B1 - 3.0*omega_dm_0 + 3.0*omega_dm_0*theta + 6.0*sqrt(B1*B1/3.0 +
-						 (B0/6.0 + 0.5*omega_dm_0*theta)*(B0/6.0 + 0.5*omega_dm_0*theta) ));
-	
-		c2 = kappa2/lambda2;
-
-		acc[0] = -(3.0 + HbtbyHb2)*D_a[0]/a - 3.0*c1*D[0]/(a*a);
+		acc[0] = -(3.0 + HbtbyHb2)*D_a[0]/a - 3.0*c1*D[0]/(a*a); //printf("acc[0] %.10lf\t%.10lf\t%.10lf\n",acc[0],D_a[0]/a,D[0]/(a*a));
 		acc[1] = -(3.0 + HbtbyHb2)*D_a[1]/a + (8.0/3.0)*D_a[0]*D_a[0] - 3.0*c1*D[1]/(a*a) - 6.0*(c1+c2)*D[0]*D[0]/(a*a);
 		acc[2] = delta_aa(a, D[2],  D_a[2]);
-
 
 
 	}
 
 
-
 	int run_cosmo(FILE *fp,double da=0.0000001)
-	{
+	{	printf("run cosmo omL %lf  w  %lf\n",omega_L_0,w);
 
 	 double D[3],D_a[3],D_rk[5][3], D_a_rk[5][3], acc[3];
 	 double D_i[3], D_a_i[3];
@@ -296,13 +243,14 @@ class cosmo_bigravity
 
 		D_rk[0][2] = D[2];
 		D_a_rk[0][2] = D_a[2]; 
+		ak = a;
 		
 		//
 		//if(((cntr%1000)==0))
 		if(!(burn)&&((cntr%1000)==0))
 		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
 			a,D[0],D[1],D[2],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[2]/D_i[2],
-			3.0*D[1]/(D[0]*D[0]),3.0*D[2]/(D[0]*D[0]));
+			3.0*D[1]/(D[0]*D[0]),a*(D_a[0]/D[0]));
 
 
 	
@@ -368,6 +316,11 @@ class cosmo_bigravity
 
 	   }
 
+
+	fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
+			a,D[0],D[1],D[2],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[2]/D_i[2],
+			3.0*D[1]/(D[0]*D[0]),a*(D_a[0]/D[0]));
+
 	D1_0  = D[0];
 
 	cs_D1 = new double[3*aN];
@@ -423,6 +376,9 @@ class cosmo_bigravity
 	
 
 };
+
+
+
 
 
 
@@ -495,7 +451,7 @@ void test_pk(double omega_dm_0,double D1_0)
 
 }
 
-double int_z(int argc,char *argv[],double theta,double k,cosmo_bigravity bimet,double da =  0.00001)
+double int_z(int argc,char *argv[],double theta,double k,cosmo_negcc_cw bimet,double da =  0.00001)
 {
 
 
@@ -532,12 +488,12 @@ double int_z(int argc,char *argv[],double theta,double k,cosmo_bigravity bimet,d
 		x =  bimet.omega_dm_0*pow(a0/as[j],3.0);
 		bimet.g(x,gv);
 		
+		
 		ktc = k*theta*chi;
 		j0 = gsl_sf_bessel_J0(ktc);
-		wgv = wg(a0/a-1.0);
+		wgv = wg(a0/as[j]-1.0);
 
-		cur_int = sqrt(gv[0])*(D1/as[j])*(D1/as[j])*( (1.0-fv)*(gv[1] + 1.5*x*gv[2]) + 1.5*x*(5.0*gv[2] + 3.0*x*gv[3]) )*wgv*j0;
-		//cur_int = sqrt(gv[0])*(D1/as[j])*(D1/as[j])*( (1.0-fv))*wgv*j0;
+		cur_int = sqrt(gv[0])*(D1/as[j])*(D1/as[j])*( (1.0-fv))*wgv*j0;
 
 		in_z+=(da/6.0)*smp[j]*cur_int;
 			
@@ -563,7 +519,7 @@ double int_z(int argc,char *argv[],double theta,double k,cosmo_bigravity bimet,d
 
 
 
-double int_k(int argc,char *argv[],double theta,cosmo_bigravity bimet,double kini=0.0001,double kend=1.0,double dk=0.01)
+double int_k(int argc,char *argv[],double theta,cosmo_negcc_cw bimet,double kini=0.00004,double kend=3.0,double dk=0.01)
 {
 
 	double in_k,in_k1,in_k2,in_k3;
@@ -582,7 +538,7 @@ double int_k(int argc,char *argv[],double theta,cosmo_bigravity bimet,double kin
 	   pk2 = Pk(k+0.5*dk,bimet.omega_dm_0,D1_0);
 	   pk3 = Pk(k+dk,bimet.omega_dm_0,D1_0);
 
-	   in_k1 = int_z(argc,argv,theta,k,bimet);//printf("theta %lf  k_frac %lf  %lf\n",theta,k,in_k1);
+	   in_k1 = int_z(argc,argv,theta,k,bimet);//printf("theta %lf  k_frac %lf  %lf\n",theta,k/kend,in_k1);
 	   in_k1 = pk1*in_k1/k;
 
 	   
@@ -604,7 +560,7 @@ double int_k(int argc,char *argv[],double theta,cosmo_bigravity bimet,double kin
 }
 
 
-double int_logk(int argc,char *argv[],double theta,cosmo_bigravity bimet,double lkini=-12.0,double lkend=1.0,double dlk=0.05)
+double int_logk(int argc,char *argv[],double theta,cosmo_negcc_cw bimet,double lkini=-12.0,double lkend=1.0,double dlk=0.05)
 {
 
 	double in_k,in_k1,in_k2,in_k3;
@@ -622,11 +578,9 @@ double int_logk(int argc,char *argv[],double theta,cosmo_bigravity bimet,double 
 	   k1 = exp(lk);
 	   k2 = exp(lk+0.5*dlk);
 	   k3 = exp(lk+dlk);
-
 	   pk1 = Pk(k1,bimet.omega_dm_0,D1_0);
 	   pk2 = Pk(k2,bimet.omega_dm_0,D1_0);
 	   pk3 = Pk(k3,bimet.omega_dm_0,D1_0);
-
 
 	   in_k1 = int_z(argc,argv,theta,k1,bimet);//printf("theta %lf  k_frac %lf  %lf\n",theta,k,in_k1);
 	   in_k1 = pk1*in_k1;
@@ -657,6 +611,8 @@ double int_logk(int argc,char *argv[],double theta,cosmo_bigravity bimet,double 
 
 
 
+
+
 int main(int argc,char *argv[])
 {
 	double sig8  = 0.79;
@@ -667,7 +623,7 @@ int main(int argc,char *argv[])
 	double *data;
 
 
-	double om_dm_0, model_param;
+	double om_dm_0, model_param,model_param2;
 	double D1_0; int theory;
 
 	double multi_fac,T0,bias;
@@ -683,6 +639,7 @@ int main(int argc,char *argv[])
 	string argstr = argv[1];
 	string om_str = argv[2];
 	string mod_str = argv[3];
+	string mod_str2 = argv[4];
 	string extstr = ".txt";
 	string us = "_";
 
@@ -690,6 +647,7 @@ int main(int argc,char *argv[])
 	
 	om_dm_0 = atof(argv[2]);
 	model_param = atof(argv[3]);
+	model_param2 = atof(argv[4]);
 
 	T0 = 2.72548;
 	bias = 5.47;
@@ -699,16 +657,16 @@ int main(int argc,char *argv[])
 
 	
 
-	cosmo_bigravity cosmo_model_bigravity(om_dm_0,model_param);
+	cosmo_negcc_cw cosmo_model_nccw(om_dm_0,model_param,model_param2);
 
 	
 	
 
 	
 
-	fname = fname+us+argstr+us+"om"+us+om_str+us+"B1"+us+mod_str;
-	fname2 = fname2+us+argstr+us+"om"+us+om_str+us+"B1"+us+mod_str;
-	printf("bimetric\n");
+	fname = fname+us+argstr+us+"om"+us+om_str+us+"omL"+us+mod_str+us+"w"+us+mod_str2;
+	fname2 = fname2+us+argstr+us+"om"+us+om_str+us+"omL"+us+mod_str+us+"w"+us+mod_str2;
+	printf("-CC constant w\n");
 		
 
 	fname = fname+extstr;
@@ -717,23 +675,25 @@ int main(int argc,char *argv[])
 	printf("%s\n",fname.c_str());
 	printf("%s\n",fname2.c_str());
 
+	printf("\nomdm0 %lf\n",om_dm_0);
+	printf("omL0 %lf\n",model_param);
+	printf("w %lf\n\n",model_param2);
+
 	FILE *fppass = fopen(fname.c_str(),"w");
 	FILE *fp = fopen(fname2.c_str(),"w");
 
-	cosmo_model_bigravity.run_cosmo(fppass);
+	cosmo_model_nccw.run_cosmo(fppass);
 
 	printf("RUN Done\n\n");
 
 	for(theta = thetai;theta<=thetai;theta+=dtheta)
 	{
 		
-		
-		//wgt = int_k(argc,argv,theta,cosmo_model_bigravity);
-		wgt = int_logk(argc,argv,theta,cosmo_model_bigravity);
+		//wgt = int_k(argc,argv,theta,cosmo_model_nccw);
+		wgt = int_logk(argc,argv,theta,cosmo_model_nccw);
 		
 		fprintf(fp,"%lf\t%.10lf\n",(180.0/M_PI)*theta,multi_fac*wgt);
 		printf("%lf\t%.10lf\n",theta,multi_fac*wgt*1000000.0);
-		
 		
 
 	}
@@ -746,7 +706,7 @@ int main(int argc,char *argv[])
 	fclose(fp);
 
 
- test_pk(cosmo_model_bigravity.omega_dm_0,cosmo_model_bigravity.D1_0);
+ test_pk(cosmo_model_nccw.omega_dm_0,cosmo_model_nccw.D1_0);
 
 }
 
@@ -757,4 +717,8 @@ int main(int argc,char *argv[])
 
 
 
-///##########################################################	
+
+
+
+
+
