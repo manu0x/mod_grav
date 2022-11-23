@@ -73,10 +73,10 @@ class cosmo_negcc_cw
 	{
  	   
  	   
-    	   dr[0] = x + ratio_dem*pow(x,1.0+w) + omega_L_0  ;
-    	   dr[1] = 1.0 + (1.0+w)*ratio_dem*pow(x,w);
-    	   dr[2] = (1.0+w)*w*ratio_dem*pow(x,w-1.0);
-    	   dr[3] = (1.0+w)*w*(w-1.0)*ratio_dem*pow(x,w-2.0);
+    	   dr[0] = x + omega_de_0*pow(x/omega_dm_0,1.0+w) + omega_L_0  ;
+    	   dr[1] = 1.0 + (1.0+w)*ratio_dem*pow(x/omega_dm_0,w);
+    	   dr[2] = (1.0+w)*w*ratio_dem*pow(x/omega_dm_0,w-1.0)/omega_dm_0;
+    	   dr[3] = (1.0+w)*w*(w-1.0)*ratio_dem*pow(x/omega_dm_0,w-2.0)/(omega_dm_0*omega_dm_0);
 
 
 
@@ -142,14 +142,16 @@ class cosmo_negcc_cw
 	}
 
 
-	int run_cosmo(FILE *fp,double da=0.0000001)
-	{	printf("run cosmo omL %lf  w  %lf\n",omega_L_0,w);
+     int run_cosmo(FILE *fp,double da=0.000001)
+     {	printf("run cosmo omL %lf  w  %lf\n",omega_L_0,w);
 
 	 double D[3],D_a[3],D_rk[5][3], D_a_rk[5][3], acc[3];
 	 double D_i[3], D_a_i[3];
 
 	 double a,ai,ai_burn,a0,ak;
 	 double rk_coef[4] = {0.5,0.5,1.0,1.0};
+
+	 double isw_potn,fv;
 	 
 
 	
@@ -164,7 +166,7 @@ class cosmo_negcc_cw
 
 
 	dai = da;
-	ai = 0.001;
+	ai = 0.000908;
 	ai_burn = ai*0.1;
 	a0 = 1.0;
 
@@ -248,12 +250,19 @@ class cosmo_negcc_cw
 		//
 		//if(((cntr%1000)==0))
 		if(!(burn)&&((cntr%1000)==0))
-		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
-			a,D[0],D[1],D[2],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[2]/D_i[2],
-			3.0*D[1]/(D[0]*D[0]),a*(D_a[0]/D[0]));
+		{	x =  omega_dm_0*pow(a0/a,3.0);
+			g(x,gv);
 
 
+			fv = a*(D_a[0]/D[0]);
+			isw_potn = (1.0-fv)*D[0];	
 	
+			fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
+				a,D[0],D[1],D[2],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[2]/D_i[2],
+				3.0*D[1]/(D[0]*D[0]),3.0*D[2]/(D[0]*D[0]),gv[0],isw_potn);
+
+
+		}
 	
 
 		if(a>=ai)
@@ -316,10 +325,16 @@ class cosmo_negcc_cw
 
 	   }
 
+	x =  omega_dm_0*pow(a0/a,3.0);
+	g(x,gv);
+	printf("gv0  %lf  %lf\n",gv[0],x);
 
-	fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
-			a,D[0],D[1],D[2],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[2]/D_i[2],
-			3.0*D[1]/(D[0]*D[0]),a*(D_a[0]/D[0]));
+	fv = a*(D_a[0]/D[0]);
+	isw_potn = (1.0-fv)*D[0];	
+	
+	fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
+				a,D[0],D[1],D[2],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[2]/D_i[2],
+				3.0*D[1]/(D[0]*D[0]),3.0*D[2]/(D[0]*D[0]),gv[0],isw_potn);
 
 	D1_0  = D[0];
 
@@ -627,12 +642,13 @@ int main(int argc,char *argv[])
 	double D1_0; int theory;
 
 	double multi_fac,T0,bias;
-	double theta,thetai,thetaend,dtheta,wgt;
+	double theta,thetai,thetaend,dtheta,theta_r,wgt;
 
-	
-	thetai = 0.0010;
-	thetaend = exp(1.0)*M_PI/6.0;
-	dtheta = 0.025;
+	// These thetas are in degrees while for calc. we convert value to rad in loop before passing rad val to intgrat fncts
+	thetai = 0.05;
+	thetaend = 150.0;
+	dtheta = 0.4*exp(1.0);
+
 
 	string fname = "delta";
 	string fname2 = "wgt";
@@ -686,14 +702,14 @@ int main(int argc,char *argv[])
 
 	printf("RUN Done\n\n");
 
-	for(theta = thetai;theta<=thetai;theta+=dtheta)
+	for(theta = thetai;theta<=thetaend;theta*=dtheta)
 	{
+		theta_r = (M_PI/180.0)*theta;				//Converting theta into radians
+		//wgt = int_k(argc,argv,theta_r,cosmo_model_nccw);
+		wgt = int_logk(argc,argv,theta_r,cosmo_model_nccw);
 		
-		//wgt = int_k(argc,argv,theta,cosmo_model_nccw);
-		wgt = int_logk(argc,argv,theta,cosmo_model_nccw);
-		
-		fprintf(fp,"%lf\t%.10lf\n",(180.0/M_PI)*theta,multi_fac*wgt);
-		printf("%lf\t%.10lf\n",theta,multi_fac*wgt*1000000.0);
+		fprintf(fp,"%lf\t%.10lf\n",theta,multi_fac*wgt);
+		printf("%.10lf\t%.10lf\n",theta,multi_fac*wgt*1000000.0);
 		
 
 	}

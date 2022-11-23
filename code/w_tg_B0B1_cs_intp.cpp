@@ -68,7 +68,7 @@ class cosmo_bigravity
     	   dr[0] =  b0t + sqrt(b0t*b0t + b1t);
     	   dr[1] = 0.5 + 0.5*b0t/sqrt(b1t + b0t*b0t);
     	   dr[2] = -0.25*b0t*b0t/pow(b1t + b0t*b0t,1.5) + 0.25/sqrt(b1t + b0t*b0t);
-    	    dr[3] = (3.0*b0t*b0t*b0t/pow(b1t + b0t*b0t,2.5) -3.0*b0t/pow(b1t + b0t*b0t,1.5))/8.0;	
+    	   dr[3] = (3.0*b0t*b0t*b0t/pow(b1t + b0t*b0t,2.5) -3.0*b0t/pow(b1t + b0t*b0t,1.5))/8.0;	
 
 
 
@@ -195,8 +195,8 @@ class cosmo_bigravity
 
 
 
-	int run_cosmo(FILE *fp,double da=0.0000001)
-	{
+     int run_cosmo(FILE *fp,double da=0.000001)
+     {
 
 	 double D[3],D_a[3],D_rk[5][3], D_a_rk[5][3], acc[3];
 	 double D_i[3], D_a_i[3];
@@ -204,7 +204,7 @@ class cosmo_bigravity
 	 double a,ai,ai_burn,a0,ak;
 	 double rk_coef[4] = {0.5,0.5,1.0,1.0};
 	 
-
+	double isw_potn,fv;
 	
 	double in_z,chi1,chi2,chi3,chi,cur_z,gv[4],x;
 	
@@ -217,7 +217,7 @@ class cosmo_bigravity
 
 
 	dai = da;
-	ai = 0.001;
+	ai = 0.000908;
 	ai_burn = ai*0.1;
 	a0 = 1.0;
 
@@ -300,12 +300,19 @@ class cosmo_bigravity
 		//
 		//if(((cntr%1000)==0))
 		if(!(burn)&&((cntr%1000)==0))
-		fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
-			a,D[0],D[1],D[2],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[2]/D_i[2],
-			3.0*D[1]/(D[0]*D[0]),3.0*D[2]/(D[0]*D[0]));
+		{
+			x =  omega_dm_0*pow(a0/a,3.0);
+		
+		        g(x,gv);	
+			fv = a*(D_a[0]/D[0]);		
+
+			isw_potn = D[0]*( (1.0-fv)*(gv[1] + 1.5*x*gv[2]) + 1.5*x*(5.0*gv[2] + 3.0*x*gv[3]) );
+			fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
+				a,D[0],D[1],D[2],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[2]/D_i[2],
+				3.0*D[1]/(D[0]*D[0]),3.0*D[2]/(D[0]*D[0]),gv[0],isw_potn);
 
 
-	
+		}
 	
 
 		if(a>=ai)
@@ -367,6 +374,18 @@ class cosmo_bigravity
 
 
 	   }
+
+	x =  omega_dm_0*pow(a0/a,3.0);
+		
+	g(x,gv);	
+	fv = a*(D_a[0]/D[0]);	
+
+	printf("gv0  %lf\n",gv[0]);	
+
+	isw_potn = D[0]*( (1.0-fv)*(gv[1] + 1.5*x*gv[2]) + 1.5*x*(5.0*gv[2] + 3.0*x*gv[3]) );
+	fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
+				a,D[0],D[1],D[2],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[2]/D_i[2],
+				3.0*D[1]/(D[0]*D[0]),3.0*D[2]/(D[0]*D[0]),gv[0],isw_potn);
 
 	D1_0  = D[0];
 
@@ -671,12 +690,12 @@ int main(int argc,char *argv[])
 	double D1_0; int theory;
 
 	double multi_fac,T0,bias;
-	double theta,thetai,thetaend,dtheta,wgt;
+	double theta,thetai,thetaend,dtheta,theta_r,wgt;
 
 	
-	thetai = 0.0010;
-	thetaend = exp(1.0)*M_PI/6.0;
-	dtheta = 0.025;
+	thetai = 0.05;
+	thetaend = 150.0;
+	dtheta = 0.4*exp(1.0);
 
 	string fname = "delta";
 	string fname2 = "wgt";
@@ -724,14 +743,14 @@ int main(int argc,char *argv[])
 
 	printf("RUN Done\n\n");
 
-	for(theta = thetai;theta<=thetai;theta+=dtheta)
+	for(theta = thetai;theta<=thetaend;theta*=dtheta)
 	{
 		
+		theta_r = (M_PI/180.0)*theta;	
+		//wgt = int_k(argc,argv,theta_r,cosmo_model_bigravity);
+		wgt = int_logk(argc,argv,theta_r,cosmo_model_bigravity);
 		
-		//wgt = int_k(argc,argv,theta,cosmo_model_bigravity);
-		wgt = int_logk(argc,argv,theta,cosmo_model_bigravity);
-		
-		fprintf(fp,"%lf\t%.10lf\n",(180.0/M_PI)*theta,multi_fac*wgt);
+		fprintf(fp,"%lf\t%.10lf\n",theta,multi_fac*wgt);
 		printf("%lf\t%.10lf\n",theta,multi_fac*wgt*1000000.0);
 		
 		
