@@ -32,7 +32,7 @@ class cosmo_negcc_cw
 
 	public:
 	double omega_dm_0, H0,omega_L_0,omega_de_0;
-	double D1_0; 
+	double D1_0,net_chi; 
 	
 	double dai;
 	
@@ -123,7 +123,34 @@ class cosmo_negcc_cw
 
 	}
 
-	void pert_delta_aa(double *acc, double D[3], double D_a[3],double a,double a0=1.0)
+	double delta_lin_lue(double a, double delta, double delta_a,int de_mode,double a0=1.0)
+	{
+		double x,acc,gv[4];
+
+		x =  omega_dm_0*pow(a0/a,3.0);
+		  
+		  g(x,gv);
+		 
+		if(de_mode)
+		{
+			acc = -(1.0-0.5*x*(gv[1]/gv[0]))*3.0*(delta_a/a) + 1.5*x*delta/(gv[0]*a*a);
+
+		}
+
+		else
+		{
+			acc = -(1.0-0.5*x*(gv[1]/gv[0]))*3.0*(delta_a/a) + 1.5*x*(gv[1]+ 3.0*x*gv[2])*delta/(gv[0]*a*a);
+
+		}
+
+		
+	
+		return(acc);
+
+	}
+
+
+	void pert_delta_aa(double *acc, double D[5], double D_a[5],double a,double a0=1.0)
 	{
 		double HbtbyHb2;	
 		double c1,c2;
@@ -137,25 +164,29 @@ class cosmo_negcc_cw
 		acc[0] = -(3.0 + HbtbyHb2)*D_a[0]/a - 3.0*c1*D[0]/(a*a); //printf("acc[0] %.10lf\t%.10lf\t%.10lf\n",acc[0],D_a[0]/a,D[0]/(a*a));
 		acc[1] = -(3.0 + HbtbyHb2)*D_a[1]/a + (8.0/3.0)*D_a[0]*D_a[0] - 3.0*c1*D[1]/(a*a) - 6.0*(c1+c2)*D[0]*D[0]/(a*a);
 		acc[2] = delta_aa(a, D[2],  D_a[2]);
+		acc[3] = delta_lin_lue(a,D[3],D_a[3],1);
+		acc[4] = delta_lin_lue(a,D[4],D_a[4],0);
 
 
 	}
 
 
-     int run_cosmo(FILE *fp,double da=0.000001)
+     int run_cosmo(FILE *fp,FILE *fp_de,FILE *fp_mg,int de_mode=1,double da=0.000001)
      {	printf("run cosmo omL %lf  w  %lf\n",omega_L_0,w);
 
-	 double D[3],D_a[3],D_rk[5][3], D_a_rk[5][3], acc[3];
-	 double D_i[3], D_a_i[3];
+	 double D[5],D_a[5],D_rk[5][5], D_a_rk[5][5], acc[5];
+	 double D_i[5], D_a_i[5];
 
 	 double a,ai,ai_burn,a0,ak;
 	 double rk_coef[4] = {0.5,0.5,1.0,1.0};
 
-	 double isw_potn,fv;
+	 double isw_potn,isw_potn_de,isw_potn_mg,fv;
 	 
 
 	
 	double in_z,chi1,chi2,chi3,chi,cur_z,gv[4],x;
+	double de_intzc,de_intzc1;
+	double mg_intzc,mg_intzc1;
 	
 
 	int i,j,theory,acntr,aN;
@@ -187,9 +218,22 @@ class cosmo_negcc_cw
 
 	D_i[2] = D_i[0];
 	D_a_i[2] = D_a_i[0];
+
+	D_i[3] = D_i[0];
+	D_a_i[3] = D_a_i[0];
+
+	D_i[4] = D_i[0];
+	D_a_i[4] = D_a_i[0];
 	
 	D[2] = D_i[2];
 	D_a[2] = D_a_i[2];
+
+
+	D[3] = D_i[3];
+	D_a[3] = D_a_i[3];
+
+	D[4] = D_i[4];
+	D_a[4] = D_a_i[4];
 
 
 	a_sp = new double[aN];
@@ -245,6 +289,13 @@ class cosmo_negcc_cw
 
 		D_rk[0][2] = D[2];
 		D_a_rk[0][2] = D_a[2]; 
+
+		D_rk[0][3] = D[3];
+		D_a_rk[0][3] = D_a[3]; 
+
+		D_rk[0][4] = D[4];
+		D_a_rk[0][4] = D_a[4]; 
+	
 		ak = a;
 		
 		//
@@ -256,10 +307,22 @@ class cosmo_negcc_cw
 
 			fv = a*(D_a[0]/D[0]);
 			isw_potn = (1.0-fv)*D[0];	
+
+			fv = a*(D_a[3]/D[3]);
+			isw_potn_de = (1.0-fv)*D[3];
+
+			fv = a*(D_a[4]/D[4]);
+			isw_potn_mg = D[4]*( (1.0-fv)*(gv[1] + 1.5*x*gv[2]) + 1.5*x*(5.0*gv[2] + 3.0*x*gv[3]) );
 	
 			fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
-				a,D[0],D[1],D[2],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[2]/D_i[2],
+				a,D[0]/a,D[1],D[2],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[2]/D_i[2],
 				3.0*D[1]/(D[0]*D[0]),3.0*D[2]/(D[0]*D[0]),gv[0],isw_potn);
+
+			fprintf(fp_de,"%lf\t%lf\t%lf\t%lf\t\n",
+				a,D[3]/a,isw_potn_de,de_intzc);
+
+			fprintf(fp_mg,"%lf\t%lf\t%lf\t%lf\t\n",
+				a,D[4]/a,isw_potn_mg,mg_intzc);
 
 
 		}
@@ -280,7 +343,40 @@ class cosmo_negcc_cw
 		  chi3 = 1.0/((a+da)*(a+da)*sqrt(Hsqr(a+da)));
 		  chi+= (da/6.0)*(chi1+4.0*chi2+chi3)*(H0/H0byc);
 		  g(x,gv);
-		 
+	
+		  fv = a*(D_a[3]/D[3]);
+		  de_intzc1 = sqrt(gv[0])*(D[3]/a)*(D[3]/a)*( (1.0-fv));
+
+		  fv = a*(D_a[4]/D[4]);
+		  mg_intzc1 = sqrt(gv[0])*(D[4]/a)*(D[4]/a)*( (1.0-fv)*(gv[1] + 1.5*x*gv[2]) + 1.5*x*(5.0*gv[2] + 3.0*x*gv[3]) );
+
+		  if(cntr==0)
+		  {
+   			
+			de_intzc+= de_intzc1*da/3.0;	
+			mg_intzc+= mg_intzc1*da/3.0;
+		  }
+
+		 else
+		 {
+			if(cntr%2==0)
+			{
+				de_intzc+= 2.0*de_intzc1*da/3.0;	
+				mg_intzc+= 2.0*mg_intzc1*da/3.0;
+			
+			}
+			
+
+			else
+			{
+				de_intzc+= 4.0*de_intzc1*da/3.0;	
+				mg_intzc+= 4.0*mg_intzc1*da/3.0;
+			
+			}
+
+
+		 }
+
 		 
 		 // cur_z = sqrt(gv[0])*D[0]*D[0]*( (1.0-fv)*(gv[1] + 1.5*x*gv[2]) + 1.5*x*(5.0*gv[2] + 3.0*x*gv[3]) )*wgv*j0;
 
@@ -293,7 +389,7 @@ class cosmo_negcc_cw
 			pert_delta_aa(acc, D_rk[0], D_a_rk[0],ak);
 
 			
-		   for(j=0;j<3;++j)
+		   for(j=0;j<5;++j)
 			{D_a_rk[i][j] = da*acc[j];
 			 D_rk[i][j] = da*D_a_rk[0][j];
 				
@@ -311,7 +407,7 @@ class cosmo_negcc_cw
 		}
 
 
-	    for(j=0;j<3;++j)
+	    for(j=0;j<5;++j)
 		{
 		 D[j] = D[j] + (1.0/6.0)*(D_rk[1][j]+2.0*D_rk[2][j]+2.0*D_rk[3][j]+D_rk[4][j]);
 		 D_a[j] = D_a[j] + (1.0/6.0)*(D_a_rk[1][j]+2.0*D_a_rk[2][j]+2.0*D_a_rk[3][j]+D_a_rk[4][j]);
@@ -327,16 +423,29 @@ class cosmo_negcc_cw
 
 	x =  omega_dm_0*pow(a0/a,3.0);
 	g(x,gv);
-	printf("gv0  %lf  %lf\n",gv[0],x);
+
 
 	fv = a*(D_a[0]/D[0]);
 	isw_potn = (1.0-fv)*D[0];	
+
+	fv = a*(D_a[3]/D[3]);
+	isw_potn_de = (1.0-fv)*D[3];
+
+	fv = a*(D_a[4]/D[4]);
+	isw_potn_mg = D[4]*( (1.0-fv)*(gv[1] + 1.5*x*gv[2]) + 1.5*x*(5.0*gv[2] + 3.0*x*gv[3]) );
 	
 	fprintf(fp,"%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",
 				a,D[0],D[1],D[2],D[0]*ai/(a*D_i[0]),D[1]*ai/(a*D_i[1]),D[0]/D_i[0],D[1]/D_i[1],D[2]/D_i[2],
 				3.0*D[1]/(D[0]*D[0]),3.0*D[2]/(D[0]*D[0]),gv[0],isw_potn);
 
+	fprintf(fp_de,"%lf\t%lf\t%lf\t%lf\t\n",
+				a,D[3]/a,isw_potn_de,de_intzc);
+
+	fprintf(fp_mg,"%lf\t%lf\t%lf\t%lf\t\n",
+				a,D[4]/a,isw_potn_mg,mg_intzc);
+
 	D1_0  = D[0];
+	net_chi = chi;
 
 	cs_D1 = new double[3*aN];
 	cs_f = new double[3*aN];
@@ -504,7 +613,7 @@ double int_z(int argc,char *argv[],double theta,double k,cosmo_negcc_cw bimet,do
 		bimet.g(x,gv);
 		
 		
-		ktc = k*theta*chi;
+		ktc = k*theta*(bimet.net_chi-chi);
 		j0 = gsl_sf_bessel_J0(ktc);
 		wgv = wg(a0/as[j]-1.0);
 
@@ -651,7 +760,9 @@ int main(int argc,char *argv[])
 
 
 	string fname = "delta";
-	string fname2 = "wgt";
+	string fname2 = "DE";
+	string fname3 = "MG";
+	string fname4 = "wgt";
 	string argstr = argv[1];
 	string om_str = argv[2];
 	string mod_str = argv[3];
@@ -666,9 +777,10 @@ int main(int argc,char *argv[])
 	model_param2 = atof(argv[4]);
 
 	T0 = 2.72548;
-	bias = 5.47;
+	bias = 1.5;
 
-	multi_fac = 3.0*T0*twopie*twopie*bias*om_dm_0*H0byc*H0byc*H0byc;
+	//multi_fac = 3.0*T0*twopie*twopie*bias*om_dm_0*H0byc*H0byc*H0byc;
+	multi_fac = 3.0*T0*bias*om_dm_0*H0byc*H0byc*H0byc/twopie;
 	
 
 	
@@ -682,11 +794,16 @@ int main(int argc,char *argv[])
 
 	fname = fname+us+argstr+us+"om"+us+om_str+us+"omL"+us+mod_str+us+"w"+us+mod_str2;
 	fname2 = fname2+us+argstr+us+"om"+us+om_str+us+"omL"+us+mod_str+us+"w"+us+mod_str2;
+	fname3 = fname3+us+argstr+us+"om"+us+om_str+us+"omL"+us+mod_str+us+"w"+us+mod_str2;
+	fname4 = fname4+us+argstr+us+"om"+us+om_str+us+"omL"+us+mod_str+us+"w"+us+mod_str2;
+
 	printf("-CC constant w\n");
 		
 
 	fname = fname+extstr;
 	fname2 = fname2+extstr;
+	fname3 = fname3+extstr;
+	fname4 = fname4+extstr;
 
 	printf("%s\n",fname.c_str());
 	printf("%s\n",fname2.c_str());
@@ -696,9 +813,15 @@ int main(int argc,char *argv[])
 	printf("w %lf\n\n",model_param2);
 
 	FILE *fppass = fopen(fname.c_str(),"w");
-	FILE *fp = fopen(fname2.c_str(),"w");
+	FILE *fppass2 = fopen(fname2.c_str(),"w");
+	FILE *fppass3 = fopen(fname3.c_str(),"w");
+	FILE *fp = fopen(fname4.c_str(),"w");
 
-	cosmo_model_nccw.run_cosmo(fppass);
+	cosmo_model_nccw.run_cosmo(fppass,fppass2,fppass3);
+
+	fclose(fppass);
+	fclose(fppass2);
+	fclose(fppass3);
 
 	printf("RUN Done\n\n");
 
@@ -716,9 +839,12 @@ int main(int argc,char *argv[])
 	
 
 	
-	
+//	wgt = int_logk(argc,argv,(M_PI/180.0)*0.1,cosmo_model_nccw);
+		
+		
+	//	printf("%.10lf\t%.10lf\n",0.1,multi_fac*wgt*1000000.0);
 
-	fclose(fppass);
+	
 	fclose(fp);
 
 
