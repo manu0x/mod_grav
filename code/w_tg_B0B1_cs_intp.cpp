@@ -628,7 +628,7 @@ void test_pk(double omega_dm_0,double D1_0)
 
 }
 
-double int_z(int argc,char *argv[],double theta,double k,cosmo_bigravity bimet,double da =  0.00001)
+double int_z(int argc,char *argv[],double theta,double k,cosmo_bigravity bimet,double da =  0.0001)
 {
 
 
@@ -737,7 +737,7 @@ double int_k(int argc,char *argv[],double theta,cosmo_bigravity bimet,double kin
 }
 
 
-double int_logk(int argc,char *argv[],double theta,cosmo_bigravity bimet,double lkini=-12.0,double lkend=1.0,double dlk=0.05)
+double int_logk(int argc,char *argv[],double theta,cosmo_bigravity bimet,double lkini=-12.0,double lkend=1.0,double dlk=0.08)
 {
 
 	double in_k,in_k1,in_k2,in_k3;
@@ -827,10 +827,10 @@ int main(int argc,char *argv[])
 	model_param = atof(argv[3]);
 
 	T0 = 2.72548;
-	bias = 1.5;
+	bias = 5.47;
 
-	//multi_fac = 3.0*T0*twopie*twopie*bias*om_dm_0*H0byc*H0byc*H0byc;
-	multi_fac = 3.0*T0*bias*om_dm_0*H0byc*H0byc*H0byc/twopie;
+	multi_fac = 3.0*T0*twopie*twopie*bias*om_dm_0*H0byc*H0byc*H0byc;
+	//multi_fac = 3.0*T0*bias*om_dm_0*H0byc*H0byc*H0byc/twopie;
 
 	
 
